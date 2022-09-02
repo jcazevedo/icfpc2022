@@ -10,12 +10,7 @@ object Main extends App {
   // println(image.getWidth())
   // println(image.getRGB(10, 10).toHexString)
 
-  val p = Program(
-    Canvas(
-      Shape(Coords(0, 0), Coords(100, 200)),
-      Map("0" -> SimpleBlock(Shape(Coords(0, 0), Coords(100, 200)), Color(255, 0, 0, 255)))
-    )
-  )
+  val p = Program(Canvas.blank(100, 200))
 
   val image = Interpreter.paint(p)
 
