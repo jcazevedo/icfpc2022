@@ -14,7 +14,7 @@ object LineCutMove {
 
 case class PointCutMove(blockId: String, offset: Coords) extends CutMove
 
-case class ColorMove(blockId: String, color: Int) extends Move
+case class ColorMove(blockId: String, color: Color) extends Move
 
 case class SwapMove(blockId1: String, blockId2: String) extends Move
 
