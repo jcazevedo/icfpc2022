@@ -22,7 +22,10 @@ object Main extends App {
       ColorMove("0.3", Color(0, 0, 0, 255)),
       LineCutMove("0.2", LineCutMove.Vertical, 250),
       ColorMove("0.2.1", Color(255, 0, 0, 255)),
-      SwapMove("0.2.1", "0.2.0")
+      SwapMove("0.2.1", "0.2.0"),
+      MergeMove("0.2.1", "0.2.0"),
+      MergeMove("1", "0.3"),
+      ColorMove("2", Color(255, 255, 255, 255))
     )
   )
 
