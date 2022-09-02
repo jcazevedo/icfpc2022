@@ -270,8 +270,7 @@ object Interpreter {
               val nextBlockId = program.blockId + 1
               val nextBlocks =
                 program.canvas.blocks.removed(blockId1).removed(blockId2).updated(nextBlockId.toString, mergedBlock)
-              // TODO: Check if shape is correct here.
-              val nextCost = program.cost + costOf(move, program.canvas.shape, mergedBlock.shape)
+              val nextCost = program.cost + costOf(move, program.canvas.shape, if (block1.shape.size > block2.shape.size) block1.shape else block2.shape)
 
               Right(
                 program.copy(
@@ -291,8 +290,7 @@ object Interpreter {
               val nextBlockId = program.blockId + 1
               val nextBlocks =
                 program.canvas.blocks.removed(blockId1).removed(blockId2).updated(nextBlockId.toString, mergedBlock)
-              // TODO: Check if shape is correct here.
-              val nextCost = program.cost + costOf(move, program.canvas.shape, mergedBlock.shape)
+              val nextCost = program.cost + costOf(move, program.canvas.shape, if (block1.shape.size > block2.shape.size) block1.shape else block2.shape)
 
               Right(
                 program.copy(
