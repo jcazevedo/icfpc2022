@@ -8,12 +8,12 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 
 lazy val root = (project in file("."))
   .settings(
-    name                            := "icfpc2022",
-    libraryDependencies += scalaTest % Test,
-    scalafmtOnCompile               := true,
-    semanticdbEnabled               := true,
-    semanticdbVersion               := scalafixSemanticdb.revision,
-    scalafixOnCompile               := true,
+    name              := "icfpc2022",
+    libraryDependencies ++= Seq(akkaActor, akkaHttp, scalaTest % Test),
+    scalafmtOnCompile := true,
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision,
+    scalafixOnCompile := true,
     scalacOptions ++= Seq(
       "-encoding",
       "UTF-8",
