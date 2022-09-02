@@ -5,6 +5,6 @@ sealed trait Block {
   def shape: Shape
 }
 
-case class SimpleBlock(blockId: String, shape: Shape, color: Int) extends Block
+case class SimpleBlock(blockId: String, shape: Shape, color: Color) extends Block
 
 case class ComplexBlock(blockId: String, shape: Shape, childBlocks: Set[Block]) extends Block
