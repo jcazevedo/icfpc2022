@@ -1,40 +1,67 @@
 package icfpc2022
 
-import java.io.File
+import java.io.{File, PrintWriter}
 import javax.imageio.ImageIO
 
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Awaitable}
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, Multipart, Uri}
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import com.typesafe.config.ConfigFactory
 import icfpc2022.syntax._
 
 object Main extends App {
-  // val image = ImageIO.read(new File("problems/1.png"))
+  implicit val system = ActorSystem()
+  implicit val executionContext = system.dispatcher
 
-  // println(image.getHeight())
-  // println(image.getWidth())
-  // println(image.getRGB(10, 10).toHexString)
+  val config = ConfigFactory.load()
 
-  // val p = Interpreter.apply(
-  //   Program(Canvas.blank(400, 400)),
-  //   List(
-  //     PointCutMove("0", Coords(100, 100)),
-  //     ColorMove("0.0", Color(255, 0, 0, 255)),
-  //     ColorMove("0.1", Color(0, 255, 0, 255)),
-  //     ColorMove("0.2", Color(0, 0, 255, 255)),
-  //     ColorMove("0.3", Color(0, 0, 0, 255)),
-  //     LineCutMove("0.2", LineCutMove.Vertical, 250),
-  //     ColorMove("0.2.1", Color(255, 0, 0, 255))
-  //   )
-  // )
+  val API_KEY = config.getString("api-key")
+  val SUBMIT = config.getBoolean("submit")
+  val URL = config.getString("url")
 
-  // println(p.toOption.get.isl)
+  (1 to 1).foreach { id =>
+    val problem = s"problems/$id.png"
+    val islFile = s"isls/$id.isl"
+    val outputFile = s"output/$id.png"
+    val (p, cost) = Solver.solve(new File(problem))
+    val isl = p.isl
 
-  // val image = Interpreter.paint(p.toOption.get)
+    println(s"Solved problem $problem with a cost of $cost")
 
-  // ImageIO.write(image, "png", new File("test.png"))
+    println(s"Writing ISL to $islFile")
+    val writer = new PrintWriter(islFile)
+    writer.write(isl)
+    writer.close()
 
-  (1 to 15).foreach { id =>
-    val (p, cost) = Solver.solve(new File(s"problems/$id.png"))
-    println(s"$id -> $cost")
-    println(p.isl)
-    println()
+    println(s"Writing image to $outputFile")
+    ImageIO.write(Interpreter.paint(p), "png", new File(outputFile))
+
+    if (SUBMIT) {
+      val request =
+        HttpRequest(
+          method = HttpMethods.POST,
+          uri = s"$URL/api/submissions/$id/create",
+          entity = Multipart
+            .FormData(
+              Multipart.FormData.BodyPart
+                .Strict("file", HttpEntity(ContentTypes.`text/plain(UTF-8)`, isl), Map("filename" -> "submission.isl"))
+            )
+            .toEntity,
+          headers = Seq(Authorization(OAuth2BearerToken(API_KEY)))
+        )
+
+      println("Submitting solution...")
+      val result = Await.result(Http().singleRequest(request), Duration.Inf)
+      val responseBody = Await.result(result.entity.toStrict(1.minute), Duration.Inf)
+      println("Response: ${responseBody.data.utf8String}")
+    }
   }
+
+  system.terminate()
 }

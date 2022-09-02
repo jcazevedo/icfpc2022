@@ -9,7 +9,7 @@ ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports"
 lazy val root = (project in file("."))
   .settings(
     name              := "icfpc2022",
-    libraryDependencies ++= Seq(akkaActor, akkaHttp, scalaTest % Test),
+    libraryDependencies ++= Seq(akkaActor, akkaHttp, akkaStream, scalaTest % Test),
     scalafmtOnCompile := true,
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision,

@@ -48,5 +48,5 @@ object ISLGenerator {
   }
 
   implicit val programISL: ISLGenerator[Program] =
-    (x: Program) => x.moves.reverse.map(_.isl).mkString("\n")
+    (x: Program) => x.moves.reverse.map(_.isl).mkString("", "\n", "\n")
 }

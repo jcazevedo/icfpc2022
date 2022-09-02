@@ -5,6 +5,7 @@
 .idea
 .metals
 .sbtrc
+application.conf
 metals.sbt
 target/
 tmp/
