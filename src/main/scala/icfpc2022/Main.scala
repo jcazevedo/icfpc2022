@@ -13,7 +13,7 @@ object Main extends App {
   val p = Program(
     Canvas(
       Shape(Coords(0, 0), Coords(100, 200)),
-      Set(SimpleBlock("0", Shape(Coords(0, 0), Coords(100, 200)), Color(255, 0, 0, 255)))
+      Map("0" -> SimpleBlock(Shape(Coords(0, 0), Coords(100, 200)), Color(255, 0, 0, 255)))
     )
   )
 

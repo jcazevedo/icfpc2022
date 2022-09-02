@@ -28,11 +28,11 @@ object Interpreter {
 
     def paintBlock(block: Block): Unit =
       block match {
-        case SimpleBlock(_, shape, color)    => paintShape(shape, color)
-        case ComplexBlock(_, _, childBlocks) => childBlocks.foreach(paintBlock)
+        case SimpleBlock(shape, color)    => paintShape(shape, color)
+        case ComplexBlock(_, childBlocks) => childBlocks.foreach(paintBlock)
       }
 
-    program.canvas.blocks.foreach(paintBlock)
+    program.canvas.blocks.values.foreach(paintBlock)
 
     image
   }
