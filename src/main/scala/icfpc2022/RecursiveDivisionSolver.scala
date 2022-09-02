@@ -6,6 +6,7 @@ import javax.imageio.ImageIO
 import scala.collection.mutable
 
 object RecursiveDivisionSolver extends Solver {
+  val SubDivisions = 8
   val BeamSize = 1000
   val MaxIterations = 10000
 
@@ -57,9 +58,9 @@ object RecursiveDivisionSolver extends Solver {
       }
 
       current.program.canvas.blocks.foreach { case (id, block) =>
-        if (block.shape.width > 1 && block.shape.height > 1) {
-          val widthStep = math.max(block.shape.width / 4, 1)
-          val heightStep = math.max(block.shape.height / 4, 1)
+        if (block.shape.width >= SubDivisions && block.shape.height >= SubDivisions) {
+          val widthStep = math.max(block.shape.width / SubDivisions, 1)
+          val heightStep = math.max(block.shape.height / SubDivisions, 1)
 
           (widthStep until block.shape.width by widthStep).foreach { w =>
             (heightStep until block.shape.height by heightStep).foreach { h =>
@@ -86,8 +87,8 @@ object RecursiveDivisionSolver extends Solver {
           }
         }
 
-        if (block.shape.width > 1) {
-          val widthStep = math.max(block.shape.width / 4, 1)
+        if (block.shape.width >= SubDivisions) {
+          val widthStep = math.max(block.shape.width / SubDivisions, 1)
 
           (widthStep until block.shape.width by widthStep).foreach { w =>
             val afterCut = Interpreter.unsafeApply(
@@ -102,8 +103,8 @@ object RecursiveDivisionSolver extends Solver {
           }
         }
 
-        if (block.shape.height > 1) {
-          val heightStep = math.max(block.shape.height / 4, 1)
+        if (block.shape.height >= SubDivisions) {
+          val heightStep = math.max(block.shape.height / SubDivisions, 1)
 
           (heightStep until block.shape.height by heightStep).foreach { h =>
             val afterCut = Interpreter.unsafeApply(
