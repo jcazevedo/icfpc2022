@@ -6,6 +6,17 @@ object Interpreter {
   def apply(program: Program, move: Move): Either[String, Program] =
     ???
 
+  def apply(program: Program, moves: List[Move]): Either[String, Program] = {
+    var current: Either[String, Program] = Right(program)
+    val vecMoves = moves.toVector
+    var i = 0
+    while (i < vecMoves.length && current.isRight) {
+      current = apply(current.toOption.get, moves(i))
+      i += 1
+    }
+    current
+  }
+
   def paint(program: Program): BufferedImage = {
     val image =
       new BufferedImage(program.canvas.shape.to.x + 1, program.canvas.shape.to.y + 1, BufferedImage.TYPE_INT_ARGB)
