@@ -380,4 +380,10 @@ object Interpreter {
 
     image
   }
+
+  def unsafeApply(program: Program, move: Move): Program =
+    apply(program, move).toOption.get
+
+  def unsafeApply(program: Program, moves: List[Move]): Program =
+    apply(program, moves).toOption.get
 }

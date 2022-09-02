@@ -51,7 +51,7 @@ object RecursiveDivisionSolver extends Solver {
       current.program.canvas.blocks.foreach { case (id, block) =>
         if (block.shape.width > 1 && block.shape.height > 1) {
           val afterCut = Interpreter
-            .apply(
+            .unsafeApply(
               current.program,
               PointCutMove(
                 id,
@@ -61,17 +61,19 @@ object RecursiveDivisionSolver extends Solver {
                 )
               )
             )
-            .toOption
-            .get
 
           val colorMoves = (0 until 4)
             .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
             .toList
 
-          val afterColors = Interpreter.apply(afterCut, colorMoves).toOption.get
+          val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
 
           pq.enqueue(SearchNode(afterColors))
         }
+
+      // if (block.shape.width > 1) {
+      //   val afterCut = Interp
+      // }
       }
 
       if (pq.size > BeamSize)
