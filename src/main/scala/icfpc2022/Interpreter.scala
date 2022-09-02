@@ -351,12 +351,17 @@ object Interpreter {
   }
 
   def paint(program: Program): BufferedImage = {
+    val width = program.canvas.shape.width
+    val height = program.canvas.shape.height
+
     val image =
       new BufferedImage(program.canvas.shape.width, program.canvas.shape.height, BufferedImage.TYPE_INT_ARGB)
 
     def paintShape(shape: Shape, color: Color): Unit =
       (shape.bottomLeft.x until (shape.bottomLeft.x + shape.width)).foreach(x =>
-        (shape.bottomLeft.y until (shape.bottomLeft.y + shape.height)).foreach(y => image.setRGB(x, y, color.toInt))
+        (shape.bottomLeft.y until (shape.bottomLeft.y + shape.height)).foreach(y =>
+          image.setRGB(x, height - y - 1, color.toInt)
+        )
       )
 
     def paintBlock(block: Block): Unit =
