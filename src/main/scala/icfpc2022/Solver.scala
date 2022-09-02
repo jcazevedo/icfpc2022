@@ -8,7 +8,11 @@ import scala.collection.mutable
 
 import icfpc2022.syntax._
 
-object Solver {
+trait Solver {
+  def solve(target: File): (Program, Long)
+}
+
+object Solver extends Solver {
   private def pixelDiff(c1: Color, c2: Color): Double = {
     val r2 = (c1.r - c2.r).toDouble * (c1.r - c2.r).toDouble
     val g2 = (c1.g - c2.g).toDouble * (c1.g - c2.g).toDouble
