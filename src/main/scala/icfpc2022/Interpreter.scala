@@ -12,9 +12,7 @@ object Interpreter {
 
     def paintShape(shape: Shape, color: Color): Unit =
       (shape.from.x to shape.to.x).foreach(x =>
-        (shape.from.y to shape.to.y).foreach(y => {
-          println(s"Setting $x, $y to ${color.toInt.toHexString}"); image.setRGB(x, y, color.toInt)
-        })
+        (shape.from.y to shape.to.y).foreach(y => image.setRGB(x, y, color.toInt))
       )
 
     def paintBlock(block: Block): Unit =
