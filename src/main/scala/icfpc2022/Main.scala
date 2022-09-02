@@ -29,6 +29,9 @@ object Main extends App {
     val problem = s"problems/$id.png"
     val islFile = s"isls/$id.isl"
     val outputFile = s"output/$id.png"
+
+    println(s"Starting to solve problem $problem...")
+
     val (p, cost) = RecursiveDivisionSolver.solve(new File(problem))
     val isl = p.isl
 
