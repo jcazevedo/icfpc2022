@@ -61,6 +61,7 @@ object Main extends App {
       val responseBody = Await.result(result.entity.toStrict(1.minute), Duration.Inf)
       println(s"Response: ${responseBody.data.utf8String}")
     }
+    println()
   }
 
   system.terminate()

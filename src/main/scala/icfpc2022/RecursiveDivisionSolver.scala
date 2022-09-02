@@ -71,9 +71,29 @@ object RecursiveDivisionSolver extends Solver {
           pq.enqueue(SearchNode(afterColors))
         }
 
-      // if (block.shape.width > 1) {
-      //   val afterCut = Interp
-      // }
+        if (block.shape.width > 1) {
+          val afterCut = Interpreter.unsafeApply(
+            current.program,
+            LineCutMove(id, LineCutMove.Vertical, block.shape.bottomLeft.x + block.shape.width / 2)
+          )
+          val colorMoves = (0 until 2)
+            .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
+            .toList
+          val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
+          pq.enqueue(SearchNode(afterColors))
+        }
+
+        if (block.shape.height > 1) {
+          val afterCut = Interpreter.unsafeApply(
+            current.program,
+            LineCutMove(id, LineCutMove.Horizontal, block.shape.bottomLeft.y + block.shape.height / 2)
+          )
+          val colorMoves = (0 until 2)
+            .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
+            .toList
+          val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
+          pq.enqueue(SearchNode(afterColors))
+        }
       }
 
       if (pq.size > BeamSize)
