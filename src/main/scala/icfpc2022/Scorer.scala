@@ -2,6 +2,8 @@ package icfpc2022
 
 import java.awt.image.BufferedImage
 
+import scala.collection.mutable
+
 object Scorer {
   private def pixelDiff(c1: Color, c2: Color): Double = {
     val r2 = (c1.r - c2.r).toDouble * (c1.r - c2.r).toDouble
@@ -11,23 +13,29 @@ object Scorer {
     return math.sqrt(r2 + g2 + b2 + a2)
   }
 
-  private def similarity(p: Program, image: BufferedImage): Long = {
+  private def similarity(
+      p: Program,
+      image: BufferedImage,
+      cache: mutable.Map[Block, Double] = mutable.Map.empty[Block, Double]
+  ): Long = {
     lazy val height = image.getHeight()
 
     def blockDiff(block: Block): Double = {
-      block match {
-        case SimpleBlock(shape, color) =>
-          (shape.bottomLeft.x until shape.topRight.x)
-            .map(x =>
-              (shape.bottomLeft.y until shape.topRight.y)
-                .map(y => pixelDiff(color, Color.fromInt(image.getRGB(x, height - y - 1))))
-                .sum
-            )
-            .sum
+      if (!cache.contains(block))
+        cache(block) = block match {
+          case SimpleBlock(shape, color) =>
+            (shape.bottomLeft.x until shape.topRight.x)
+              .map(x =>
+                (shape.bottomLeft.y until shape.topRight.y)
+                  .map(y => pixelDiff(color, Color.fromInt(image.getRGB(x, height - y - 1))))
+                  .sum
+              )
+              .sum
 
-        case ComplexBlock(_, childBlocks) =>
-          childBlocks.map(blockDiff).sum
-      }
+          case ComplexBlock(_, childBlocks) =>
+            childBlocks.map(blockDiff).sum
+        }
+      cache(block)
     }
 
     val diff = p.canvas.blocks.values.map(blockDiff).sum
@@ -36,6 +44,10 @@ object Scorer {
     math.round(diff * alpha)
   }
 
-  def score(program: Program, target: BufferedImage): Long =
-    program.cost + similarity(program, target)
+  def score(
+      program: Program,
+      target: BufferedImage,
+      cache: mutable.Map[Block, Double] = mutable.Map.empty[Block, Double]
+  ): Long =
+    program.cost + similarity(program, target, cache)
 }

@@ -25,11 +25,11 @@ object Main extends App {
   val SUBMIT = config.getBoolean("submit")
   val URL = config.getString("url")
 
-  (1 to 1).foreach { id =>
+  (1 to 20).foreach { id =>
     val problem = s"problems/$id.png"
     val islFile = s"isls/$id.isl"
     val outputFile = s"output/$id.png"
-    val (p, cost) = Solver.solve(new File(problem))
+    val (p, cost) = RecursiveDivisionSolver.solve(new File(problem))
     val isl = p.isl
 
     println(s"Solved problem $problem with a cost of $cost")
@@ -59,7 +59,7 @@ object Main extends App {
       println("Submitting solution...")
       val result = Await.result(Http().singleRequest(request), Duration.Inf)
       val responseBody = Await.result(result.entity.toStrict(1.minute), Duration.Inf)
-      println("Response: ${responseBody.data.utf8String}")
+      println(s"Response: ${responseBody.data.utf8String}")
     }
   }
 
