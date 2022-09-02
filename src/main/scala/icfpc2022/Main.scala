@@ -15,11 +15,14 @@ object Main extends App {
   val p = Interpreter.apply(
     Program(Canvas.blank(400, 400)),
     List(
-      PointCutMove("0", Coords(50, 100)),
+      PointCutMove("0", Coords(100, 100)),
       ColorMove("0.0", Color(255, 0, 0, 255)),
       ColorMove("0.1", Color(0, 255, 0, 255)),
       ColorMove("0.2", Color(0, 0, 255, 255)),
-      ColorMove("0.3", Color(0, 0, 0, 255))
+      ColorMove("0.3", Color(0, 0, 0, 255)),
+      LineCutMove("0.2", LineCutMove.Vertical, 250),
+      ColorMove("0.2.1", Color(255, 0, 0, 255)),
+      SwapMove("0.2.1", "0.2.0")
     )
   )
 

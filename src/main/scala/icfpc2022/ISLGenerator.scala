@@ -8,7 +8,7 @@ trait ISLGenerator[A] {
 
 object ISLGenerator {
   implicit val lineCutMoveISL: ISLGenerator[LineCutMove] =
-    (x: LineCutMove) => s"cut [${x.blockId}] ${x.orientation.isl} ${x.offset}"
+    (x: LineCutMove) => s"cut [${x.blockId}] [${x.orientation.isl}] [${x.offset}]"
 
   implicit val verticalISL: ISLGenerator[LineCutMove.Vertical.type] =
     (_: LineCutMove.Vertical.type) => "x"
