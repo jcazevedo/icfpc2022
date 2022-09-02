@@ -6,4 +6,4 @@ sealed trait Block {
 
 case class SimpleBlock(shape: Shape, color: Color) extends Block
 
-case class ComplexBlock(shape: Shape, childBlocks: Set[Block]) extends Block
+case class ComplexBlock(shape: Shape, childBlocks: Set[SimpleBlock]) extends Block

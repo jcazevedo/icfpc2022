@@ -14,5 +14,5 @@ object Main extends App {
 
   val image = Interpreter.paint(p)
 
-  ImageIO.write(image, "png", new File("problems/test.png"))
+  ImageIO.write(image, "png", new File("test.png"))
 }
