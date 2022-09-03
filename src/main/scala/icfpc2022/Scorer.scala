@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage
 import scala.collection.mutable
 
 object Scorer {
-  private def pixelDiff(c1: Color, c2: Color): Double = {
+  def pixelDiff(c1: Color, c2: Color): Double = {
     val r2 = (c1.r - c2.r).toDouble * (c1.r - c2.r).toDouble
     val g2 = (c1.g - c2.g).toDouble * (c1.g - c2.g).toDouble
     val b2 = (c1.b - c2.b).toDouble * (c1.b - c2.b).toDouble
@@ -13,7 +13,7 @@ object Scorer {
     return math.sqrt(r2 + g2 + b2 + a2)
   }
 
-  private def similarity(
+  def similarity(
       p: Program,
       image: BufferedImage,
       cache: mutable.Map[Block, Double] = mutable.Map.empty[Block, Double]
