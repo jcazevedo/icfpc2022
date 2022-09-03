@@ -8,7 +8,7 @@ import scala.collection.mutable
 object RecursiveDivisionSolver extends Solver {
   val SubDivisions = 10
   val BeamSize = 1000
-  val MaxIterations = 300
+  val MaxIterations = 1000
 
   def solve(target: File): (Program, Long) = {
     val image = ImageIO.read(target)
@@ -48,6 +48,32 @@ object RecursiveDivisionSolver extends Solver {
     def enqueueState(state: SearchNode): Unit =
       pq.enqueue(state)
 
+    val afterPointCutScore = mutable.Map.empty[(Shape, Coords), Long]
+
+    def enqueueStateAfterPointCut(state: SearchNode, shape: Shape, coords: Coords): Unit = {
+      if (!afterPointCutScore.contains((shape, coords)) || afterPointCutScore((shape, coords)) > state.score) {
+        afterPointCutScore((shape, coords)) = state.score
+        pq.enqueue(state)
+      }
+    }
+
+    val afterLineCutScore = mutable.Map.empty[(Shape, LineCutMove.Orientation, Int), Long]
+
+    def enqueueStateAfterLineCut(
+        state: SearchNode,
+        shape: Shape,
+        orientation: LineCutMove.Orientation,
+        offset: Int
+    ): Unit = {
+      if (
+        !afterLineCutScore
+          .contains((shape, orientation, offset)) || afterLineCutScore((shape, orientation, offset)) > state.score
+      ) {
+        afterLineCutScore((shape, orientation, offset)) = state.score
+        pq.enqueue(state)
+      }
+    }
+
     enqueueState(start)
 
     println(s"Start score: ${start.score}")
@@ -67,22 +93,17 @@ object RecursiveDivisionSolver extends Solver {
 
           (widthStep until block.shape.width by widthStep).foreach { w =>
             (heightStep until block.shape.height by heightStep).foreach { h =>
+              val cutCoords = Coords(block.shape.bottomLeft.x + w, block.shape.bottomLeft.y + h)
               val afterCut = Interpreter
                 .unsafeApply(
                   current.program,
-                  PointCutMove(
-                    id,
-                    Coords(
-                      block.shape.bottomLeft.x + w,
-                      block.shape.bottomLeft.y + h
-                    )
-                  )
+                  PointCutMove(id, cutCoords)
                 )
               val colorMoves = (0 until 4)
                 .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
                 .toList
               val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-              enqueueState(SearchNode(afterColors))
+              enqueueStateAfterPointCut(SearchNode(afterColors), block.shape, cutCoords)
             }
           }
         }
@@ -99,7 +120,12 @@ object RecursiveDivisionSolver extends Solver {
               .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
               .toList
             val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            enqueueState(SearchNode(afterColors))
+            enqueueStateAfterLineCut(
+              SearchNode(afterColors),
+              block.shape,
+              LineCutMove.Vertical,
+              block.shape.bottomLeft.x + w
+            )
           }
         }
 
@@ -115,7 +141,12 @@ object RecursiveDivisionSolver extends Solver {
               .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
               .toList
             val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            enqueueState(SearchNode(afterColors))
+            enqueueStateAfterLineCut(
+              SearchNode(afterColors),
+              block.shape,
+              LineCutMove.Horizontal,
+              block.shape.bottomLeft.y + h
+            )
           }
         }
       }
