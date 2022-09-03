@@ -5,7 +5,7 @@ import javax.imageio.ImageIO
 
 import scala.collection.mutable
 
-object RecursiveDivisionSolver extends Solver {
+object RecursiveDivisionSolver {
   val BestCutBreadth = 5
   val BeamSize = 10000
   val MaxIterations = 1000
@@ -137,9 +137,9 @@ object RecursiveDivisionSolver extends Solver {
 
           bestCuts.foreach { bestCut =>
             val afterCut = Interpreter.unsafeApply(
-                current.program,
-                PointCutMove(id, bestCut)
-              )
+              current.program,
+              PointCutMove(id, bestCut)
+            )
             val colorMoves = (0 until 4).flatMap { subId =>
               val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
               val targetColor = mostFrequentColor(targetBlock.shape)
