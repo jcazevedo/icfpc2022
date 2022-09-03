@@ -1,7 +1,6 @@
 package icfpc2022
 
-import java.io.File
-import javax.imageio.ImageIO
+import java.awt.image.BufferedImage
 
 import scala.collection.mutable
 
@@ -10,8 +9,7 @@ object Solver {
   val BeamSize = 10000
   val MaxIterations = 1000
 
-  def solve(target: File): Program = {
-    val image = ImageIO.read(target)
+  def solve(image: BufferedImage): Program = {
     val width = image.getWidth()
     val height = image.getHeight()
 
