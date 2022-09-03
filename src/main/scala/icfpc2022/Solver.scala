@@ -5,7 +5,7 @@ import javax.imageio.ImageIO
 
 import scala.collection.mutable
 
-object RecursiveDivisionSolver {
+object Solver {
   val BestCutBreadth = 5
   val BeamSize = 10000
   val MaxIterations = 1000
