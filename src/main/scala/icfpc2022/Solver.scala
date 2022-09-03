@@ -123,6 +123,7 @@ object Solver {
       }
 
       current.program.canvas.blocks.foreach { case (id, block) =>
+        // Try point cuts.
         if (block.shape.width > 1 && block.shape.height > 1) {
           val candidates = (1 until block.shape.width).flatMap { w =>
             (1 until block.shape.height).map { h =>
@@ -154,6 +155,7 @@ object Solver {
           }
         }
 
+        // Try vertical cuts.
         if (block.shape.width > 1) {
           val candidates = (1 until block.shape.width).map { w =>
             val offset = block.shape.bottomLeft.x + w
@@ -183,6 +185,7 @@ object Solver {
           }
         }
 
+        // Try horizontal cuts.
         if (block.shape.height > 1) {
           val candidates = (1 until block.shape.height).map { h =>
             val offset = block.shape.bottomLeft.y + h
