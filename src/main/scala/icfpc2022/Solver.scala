@@ -10,7 +10,7 @@ object Solver {
   val BeamSize = 10000
   val MaxIterations = 1000
 
-  def solve(target: File): (Program, Long) = {
+  def solve(target: File): Program = {
     val image = ImageIO.read(target)
     val width = image.getWidth()
     val height = image.getHeight()
@@ -223,6 +223,6 @@ object Solver {
         println(s"Ran $iterations iterations...")
     }
 
-    (best.program, best.score)
+    best.program
   }
 }

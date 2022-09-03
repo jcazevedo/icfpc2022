@@ -32,7 +32,7 @@ object Main extends App {
 
     println(s"Starting to solve problem $problem...")
 
-    val (p, _) = Solver.solve(new File(problem))
+    val p = Solver.solve(new File(problem))
     val isl = p.isl
     val cost = Scorer.score(p, ImageIO.read(new File(problem)))
 
