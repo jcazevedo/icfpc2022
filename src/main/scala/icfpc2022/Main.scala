@@ -32,8 +32,9 @@ object Main extends App {
 
     println(s"Starting to solve problem $problem...")
 
-    val (p, cost) = RecursiveDivisionSolver.solve(new File(problem))
+    val (p, _) = RecursiveDivisionSolver.solve(new File(problem))
     val isl = p.isl
+    val cost = Scorer.score(p, ImageIO.read(new File(problem)))
 
     println(s"Solved problem $problem with a cost of $cost")
 
