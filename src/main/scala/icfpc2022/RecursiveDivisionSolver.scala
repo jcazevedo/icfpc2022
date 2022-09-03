@@ -8,7 +8,7 @@ import scala.collection.mutable
 object RecursiveDivisionSolver extends Solver {
   val SubDivisions = 10
   val BeamSize = 1000
-  val MaxIterations = 1000
+  val MaxIterations = 300
 
   def solve(target: File): (Program, Long) = {
     val image = ImageIO.read(target)
