@@ -14,6 +14,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import icfpc2022.syntax._
+import io.circe.parser
 
 object Main extends App {
   implicit val system = ActorSystem()
@@ -25,15 +26,28 @@ object Main extends App {
   val SUBMIT = config.getBoolean("submit")
   val URL = config.getString("url")
 
-  (1 to 25).foreach { id =>
+  (26 to 30).foreach { id =>
     val problem = s"problems/$id.png"
+    val initialCanvasJson = s"problems/$id.initial.json"
     val islFile = s"isls/$id.isl"
     val outputFile = s"output/$id.png"
 
     println(s"Starting to solve problem $problem...")
 
     val image = ImageIO.read(new File(problem))
-    val p = Solver.solve(image)
+    val initialCanvas = {
+      val initialCanvasFile = new File(initialCanvasJson)
+      if (initialCanvasFile.exists()) {
+        val source = scala.io.Source.fromFile(initialCanvasFile)
+        val content = source.getLines().mkString
+        source.close()
+        val json = parser.parse(content).toOption.get
+        Canvas.fromJson(json)
+      } else {
+        Canvas.blank(image.getWidth(), image.getHeight())
+      }
+    }
+    val p = Solver.solve(image, initialCanvas)
     val isl = p.isl
     val cost = Scorer.score(p, image)
 

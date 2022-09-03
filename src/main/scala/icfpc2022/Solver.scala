@@ -9,7 +9,7 @@ object Solver {
   val BeamSize = 10000
   val MaxIterations = 1000
 
-  def solve(image: BufferedImage): Program = {
+  def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
     val width = image.getWidth()
     val height = image.getHeight()
 
@@ -100,7 +100,7 @@ object Solver {
       lazy val score = Scorer.score(program, image, scoreCache)
     }
 
-    val start = SearchNode(Program(Canvas.blank(image.getWidth(), image.getHeight())))
+    val start = SearchNode(Program.fromInitialCanvas(initialCanvas))
     var best = start
 
     implicit val searchNodeOrdering: Ordering[SearchNode] =
