@@ -7,6 +7,12 @@ case class Canvas(shape: Shape, blocks: Map[String, Block]) {
   lazy val blockSet: Set[Block] =
     blocks.values.toSet
 
+  lazy val simpleBlockSet: Set[SimpleBlock] =
+    blocks.values.flatMap {
+      case block: SimpleBlock      => Set(block)
+      case ComplexBlock(_, blocks) => blocks
+    }.toSet
+
   lazy val coordsSet: Set[Coords] =
     blocks.values.flatMap {
       case SimpleBlock(shape, _)   => Set(shape.bottomLeft)

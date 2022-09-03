@@ -214,6 +214,38 @@ object Solver {
             enqueueState(SearchNode(afterColors))
           }
         }
+
+        // Try color.
+        val targetColor = mostFrequentColor(block.shape)
+        val shouldPaint = block match {
+          case ComplexBlock(_, childBlocks) => childBlocks.exists(b => !isSameColor(b.color, targetColor))
+          case SimpleBlock(_, color)        => !isSameColor(color, targetColor)
+        }
+        if (shouldPaint) {
+          val afterPaint = Interpreter.unsafeApply(current.program, ColorMove(id, targetColor))
+          val nextNode = SearchNode(afterPaint)
+          enqueueState(nextNode)
+        }
+
+        // Try swap.
+        current.program.canvas.blocks.foreach { case (swapId, swapBlock) =>
+          if (swapId != id) {
+            val compatibleShapes =
+              block.shape.width == swapBlock.shape.width && block.shape.height == swapBlock.shape.height
+            lazy val targetColor = mostFrequentColor(swapBlock.shape)
+
+            val trySwap = compatibleShapes && (block match {
+              case ComplexBlock(shape, childBlocks) => childBlocks.exists(b => isSameColor(b.color, targetColor))
+              case SimpleBlock(shape, color)        => isSameColor(color, targetColor)
+            })
+
+            if (trySwap) {
+              val afterSwap = Interpreter.unsafeApply(current.program, SwapMove(id, swapId))
+              val nextNode = SearchNode(afterSwap)
+              enqueueState(nextNode)
+            }
+          }
+        }
       }
 
       if (pq.size > BeamSize)
