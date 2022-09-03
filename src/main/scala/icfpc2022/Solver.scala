@@ -131,7 +131,7 @@ object Solver {
             }
           }
 
-          val bestCuts = candidates.sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
+          val bestCuts = candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
 
           bestCuts.foreach { bestCut =>
             val afterCut = Interpreter.unsafeApply(
@@ -160,7 +160,7 @@ object Solver {
             offset -> lineCutDifferences(block.shape, LineCutMove.Vertical, offset)
           }
 
-          val bestOffsets = candidates.sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
+          val bestOffsets = candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
 
           bestOffsets.foreach { bestOffset =>
             val afterCut = Interpreter.unsafeApply(
@@ -189,7 +189,7 @@ object Solver {
             offset -> lineCutDifferences(block.shape, LineCutMove.Horizontal, offset)
           }
 
-          val bestOffsets = candidates.sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
+          val bestOffsets = candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
 
           bestOffsets.foreach { bestOffset =>
             val afterCut = Interpreter.unsafeApply(
