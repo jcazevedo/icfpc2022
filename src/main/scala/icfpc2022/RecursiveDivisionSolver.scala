@@ -6,9 +6,9 @@ import javax.imageio.ImageIO
 import scala.collection.mutable
 
 object RecursiveDivisionSolver extends Solver {
-  val SubDivisions = 8
+  val SubDivisions = 10
   val BeamSize = 1000
-  val MaxIterations = 10000
+  val MaxIterations = 1000
 
   def solve(target: File): (Program, Long) = {
     val image = ImageIO.read(target)
@@ -45,7 +45,10 @@ object RecursiveDivisionSolver extends Solver {
       Ordering.by((node: SearchNode) => node.score).reverse
 
     var pq = mutable.PriorityQueue.empty[SearchNode]
-    pq.enqueue(start)
+    def enqueueState(state: SearchNode): Unit =
+      pq.enqueue(state)
+
+    enqueueState(start)
 
     println(s"Start score: ${start.score}")
 
@@ -75,14 +78,11 @@ object RecursiveDivisionSolver extends Solver {
                     )
                   )
                 )
-
               val colorMoves = (0 until 4)
                 .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
                 .toList
-
               val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-
-              pq.enqueue(SearchNode(afterColors))
+              enqueueState(SearchNode(afterColors))
             }
           }
         }
@@ -99,7 +99,7 @@ object RecursiveDivisionSolver extends Solver {
               .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
               .toList
             val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            pq.enqueue(SearchNode(afterColors))
+            enqueueState(SearchNode(afterColors))
           }
         }
 
@@ -115,7 +115,7 @@ object RecursiveDivisionSolver extends Solver {
               .map(subId => ColorMove(s"$id.$subId", mostFrequentColor(afterCut.canvas.blocks(s"$id.$subId").shape)))
               .toList
             val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            pq.enqueue(SearchNode(afterColors))
+            enqueueState(SearchNode(afterColors))
           }
         }
       }
@@ -124,6 +124,8 @@ object RecursiveDivisionSolver extends Solver {
         pq = pq.dropRight(pq.size - BeamSize)
 
       iterations += 1
+      if (iterations % 100 == 0)
+        println(s"Ran $iterations iterations...")
     }
 
     (best.program, best.score)
