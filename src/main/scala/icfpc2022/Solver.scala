@@ -6,11 +6,12 @@ import scala.collection.mutable
 
 object Solver {
   val BestCutBreadth = 5
-  val BeamSize = 1000
-  val MaxExpansions = 2000
+  val BeamSize = 100
+  val MaxExpansions = 1000
   val ColorDiffTolerance = 30
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
+    val timers = new Timers
     val height = image.getHeight()
 
     val scoreCache = mutable.Map.empty[Block, Double]
@@ -136,7 +137,7 @@ object Solver {
 
     case class SearchNode(program: Program) {
       lazy val similarity = Scorer.similarity(program, image, scoreCache)
-      lazy val score = Scorer.score(program, image, scoreCache)
+      lazy val score = timers.time("score")(Scorer.score(program, image, scoreCache))
     }
 
     def postProcess(state: SearchNode): SearchNode =
@@ -151,11 +152,13 @@ object Solver {
     var pq = mutable.PriorityQueue.empty[SearchNode]
     val visited = mutable.Map.empty[Int, Long]
     def enqueueState(state: SearchNode): Unit = {
-      val postProcessedState = postProcess(state)
-      val hash = postProcessedState.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
-      if (!visited.contains(hash) || visited(hash) > postProcessedState.score) {
-        visited(hash) = state.score
-        pq.enqueue(postProcessedState)
+      timers.time("enqueuing") {
+        val postProcessedState = postProcess(state)
+        val hash = postProcessedState.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
+        if (!visited.contains(hash) || visited(hash) > postProcessedState.score) {
+          visited(hash) = state.score
+          pq.enqueue(postProcessedState)
+        }
       }
     }
 
@@ -166,138 +169,158 @@ object Solver {
     var expansions = 0
     var ts = System.currentTimeMillis()
     while (pq.nonEmpty && expansions < MaxExpansions) {
-      val current = pq.dequeue()
-      if (current.score < best.score) {
-        println(s"New best score: ${current.score}")
-        best = current
-      }
+      timers.time("expansion") {
+        val current = pq.dequeue()
+        if (current.score < best.score)
+          best = current
 
-      current.program.canvas.blocks.foreach { case (id, block) =>
-        // Try point cuts.
-        if (block.shape.width > 1 && block.shape.height > 1) {
-          val bestCuts = bestPointCuts(block.shape)
+        current.program.canvas.blocks.foreach { case (id, block) =>
+          // Try point cuts.
+          if (block.shape.width > 1 && block.shape.height > 1) {
+            timers.time("point cut expansion") {
+              val bestCuts = bestPointCuts(block.shape)
 
-          bestCuts.foreach { bestCut =>
-            val afterCut = Interpreter.unsafeApply(
-              current.program,
-              PointCutMove(id, bestCut)
-            )
-            val colorMoves = (0 until 4).flatMap { subId =>
-              val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
-              val targetColor = mostFrequentColor(targetBlock.shape)
-              targetBlock match {
-                case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
-                  Some(ColorMove(s"$id.$subId", targetColor))
-                case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
-                  Some(ColorMove(s"$id.$subId", targetColor))
-                case _ => None
+              bestCuts.foreach { bestCut =>
+                val afterCut = Interpreter.unsafeApply(
+                  current.program,
+                  PointCutMove(id, bestCut)
+                )
+                val colorMoves = (0 until 4).flatMap { subId =>
+                  val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
+                  val targetColor = mostFrequentColor(targetBlock.shape)
+                  targetBlock match {
+                    case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
+                      Some(ColorMove(s"$id.$subId", targetColor))
+                    case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
+                      Some(ColorMove(s"$id.$subId", targetColor))
+                    case _ => None
+                  }
+                }.toList
+                val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
+                enqueueState(SearchNode(afterColors))
               }
-            }.toList
-            val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            enqueueState(SearchNode(afterColors))
+            }
+          }
+
+          // Try vertical cuts.
+          if (block.shape.width > 1) {
+            timers.time("vertical cut expansion") {
+              val bestOffsets = bestLineCuts(block.shape, LineCutMove.Vertical)
+
+              bestOffsets.foreach { bestOffset =>
+                val afterCut = Interpreter.unsafeApply(
+                  current.program,
+                  LineCutMove(id, LineCutMove.Vertical, bestOffset)
+                )
+                val colorMoves = (0 until 2).flatMap { subId =>
+                  val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
+                  val targetColor = mostFrequentColor(targetBlock.shape)
+                  targetBlock match {
+                    case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
+                      Some(ColorMove(s"$id.$subId", targetColor))
+                    case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
+                      Some(ColorMove(s"$id.$subId", targetColor))
+                    case _ => None
+                  }
+                }.toList
+                val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
+                enqueueState(SearchNode(afterColors))
+              }
+            }
+          }
+
+          // Try horizontal cuts.
+          if (block.shape.height > 1) {
+            timers.time("horizontal cut expansion") {
+              val bestOffsets = bestLineCuts(block.shape, LineCutMove.Horizontal)
+
+              bestOffsets.foreach { bestOffset =>
+                val afterCut = Interpreter.unsafeApply(
+                  current.program,
+                  LineCutMove(id, LineCutMove.Horizontal, bestOffset)
+                )
+                val colorMoves = (0 until 2).flatMap { subId =>
+                  val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
+                  val targetColor = mostFrequentColor(targetBlock.shape)
+                  targetBlock match {
+                    case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
+                      Some(ColorMove(s"$id.$subId", targetColor))
+                    case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
+                      Some(ColorMove(s"$id.$subId", targetColor))
+                    case _ => None
+                  }
+                }.toList
+                val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
+                enqueueState(SearchNode(afterColors))
+              }
+            }
           }
         }
 
-        // Try vertical cuts.
-        if (block.shape.width > 1) {
-          val bestOffsets = bestLineCuts(block.shape, LineCutMove.Vertical)
-
-          bestOffsets.foreach { bestOffset =>
-            val afterCut = Interpreter.unsafeApply(
-              current.program,
-              LineCutMove(id, LineCutMove.Vertical, bestOffset)
-            )
-            val colorMoves = (0 until 2).flatMap { subId =>
-              val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
-              val targetColor = mostFrequentColor(targetBlock.shape)
-              targetBlock match {
-                case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
-                  Some(ColorMove(s"$id.$subId", targetColor))
-                case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
-                  Some(ColorMove(s"$id.$subId", targetColor))
-                case _ => None
-              }
-            }.toList
-            val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            enqueueState(SearchNode(afterColors))
+        // Try color (every block that we should color).
+        timers.time("paint expansion") {
+          val afterPaint = current.program.canvas.blocks.foldLeft(current.program) { case (program, (id, block)) =>
+            val targetColor = mostFrequentColor(block.shape)
+            val shouldPaint = block match {
+              case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
+              case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
+            }
+            if (shouldPaint) Interpreter.unsafeApply(program, ColorMove(id, targetColor))
+            else program
           }
+          enqueueState(SearchNode(afterPaint))
         }
 
-        // Try horizontal cuts.
-        if (block.shape.height > 1) {
-          val bestOffsets = bestLineCuts(block.shape, LineCutMove.Horizontal)
-
-          bestOffsets.foreach { bestOffset =>
-            val afterCut = Interpreter.unsafeApply(
-              current.program,
-              LineCutMove(id, LineCutMove.Horizontal, bestOffset)
-            )
-            val colorMoves = (0 until 2).flatMap { subId =>
-              val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
-              val targetColor = mostFrequentColor(targetBlock.shape)
-              targetBlock match {
-                case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
-                  Some(ColorMove(s"$id.$subId", targetColor))
-                case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
-                  Some(ColorMove(s"$id.$subId", targetColor))
-                case _ => None
-              }
-            }.toList
-            val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-            enqueueState(SearchNode(afterColors))
-          }
-        }
-      }
-
-      // Try color (every block that we should color).
-      val afterPaint = current.program.canvas.blocks.foldLeft(current.program) { case (program, (id, block)) =>
-        val targetColor = mostFrequentColor(block.shape)
-        val shouldPaint = block match {
-          case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
-          case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
-        }
-        if (shouldPaint) Interpreter.unsafeApply(program, ColorMove(id, targetColor))
-        else program
-      }
-      enqueueState(SearchNode(afterPaint))
-
-      // Try swaps (every block that it makes sense to swap).
-      val (afterSwap, _) = current.program.canvas.blocks.foldLeft((current.program, Set.empty[String])) {
-        case ((program, swapped), (id, block)) =>
-          lazy val targetColor = mostFrequentColor(block.shape)
-          lazy val shouldSwap = !swapped.contains(id) && (block match {
-            case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
-            case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
-          })
-
-          if (shouldSwap) {
-            val targetForSwap = current.program.canvas.blocks.find { case (swapId, swapBlock) =>
-              id != swapId && !swapped.contains(
-                swapId
-              ) && swapBlock.shape.width == block.shape.width && swapBlock.shape.height == block.shape.height && (swapBlock match {
-                case ComplexBlock(_, blocks) => blocks.exists(b => isSameColor(b.color, targetColor))
-                case SimpleBlock(_, color)   => isSameColor(color, targetColor)
+        // Try swaps (every block that it makes sense to swap).
+        timers.time("swap expansion") {
+          val (afterSwap, _) = current.program.canvas.blocks.foldLeft((current.program, Set.empty[String])) {
+            case ((program, swapped), (id, block)) =>
+              lazy val targetColor = mostFrequentColor(block.shape)
+              lazy val shouldSwap = !swapped.contains(id) && (block match {
+                case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
+                case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
               })
-            }
-            targetForSwap match {
-              case None =>
+
+              if (shouldSwap) {
+                val targetForSwap = current.program.canvas.blocks.find { case (swapId, swapBlock) =>
+                  id != swapId && !swapped.contains(
+                    swapId
+                  ) && swapBlock.shape.width == block.shape.width && swapBlock.shape.height == block.shape.height && (swapBlock match {
+                    case ComplexBlock(_, blocks) => blocks.exists(b => isSameColor(b.color, targetColor))
+                    case SimpleBlock(_, color)   => isSameColor(color, targetColor)
+                  })
+                }
+                targetForSwap match {
+                  case None =>
+                    (program, swapped)
+                  case Some((swapId, _)) =>
+                    (Interpreter.unsafeApply(program, SwapMove(id, swapId)), swapped ++ Set(id, swapId))
+                }
+              } else
                 (program, swapped)
-              case Some((swapId, _)) =>
-                (Interpreter.unsafeApply(program, SwapMove(id, swapId)), swapped ++ Set(id, swapId))
-            }
-          } else
-            (program, swapped)
-      }
-      enqueueState(SearchNode(afterSwap))
+          }
+          enqueueState(SearchNode(afterSwap))
+        }
 
-      if (pq.size > BeamSize)
-        pq = pq.dropRight(pq.size - BeamSize)
+        if (pq.size > BeamSize) {
+          timers.time("beam cut") {
+            pq = pq.take(BeamSize)
+          }
+        }
 
-      expansions += 1
-      if (expansions % 100 == 0) {
-        val diff = System.currentTimeMillis() - ts
-        println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
-        ts = System.currentTimeMillis()
+        expansions += 1
+        if (expansions % 100 == 0) {
+          val diff = System.currentTimeMillis() - ts
+          println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
+          println(s"Best so far: ${best.score}")
+          if (pq.nonEmpty)
+            println(s"Next node score: ${pq.head.score}")
+          ts = System.currentTimeMillis()
+          println()
+          timers.outputAll
+          println()
+          timers.reset()
+        }
       }
     }
 
