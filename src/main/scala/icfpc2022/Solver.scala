@@ -210,9 +210,9 @@ object Solver {
         if (expansions % 100 == 0) {
           val diff = System.currentTimeMillis() - ts
           println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
-          println(s"Best so far: ${best.score}")
+          println(s"Best so far: ${best.score} (${best.program.canvas.blocks.size} blocks)")
           if (pq.nonEmpty)
-            println(s"Next node score: ${pq.head.score}")
+            println(s"Next node score: ${pq.head.score} (${pq.head.program.canvas.blocks.size} blocks)")
           ts = System.currentTimeMillis()
           println()
           timers.outputAll
