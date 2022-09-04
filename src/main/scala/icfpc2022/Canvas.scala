@@ -18,6 +18,14 @@ case class Canvas(shape: Shape, blocks: Map[String, Block]) {
       case SimpleBlock(shape, _)   => Set(shape.bottomLeft)
       case ComplexBlock(_, blocks) => blocks.map(_.shape.bottomLeft).toSet
     }.toSet
+
+  def colorOf(x: Int, y: Int) =
+    simpleBlockSet
+      .find { case SimpleBlock(shape, _) =>
+        x >= shape.bottomLeft.x && y >= shape.bottomLeft.y && x < shape.topRight.x && y < shape.topRight.y
+      }
+      .get
+      .color
 }
 
 object Canvas {
