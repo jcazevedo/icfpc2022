@@ -15,13 +15,13 @@ object Solver {
     val height = image.getHeight()
 
     val scoreCache = mutable.Map.empty[(Shape, Color), Double]
-    val frequentColorCache = mutable.Map.empty[Shape, Color]
 
     def getOriginalColor(x: Int, y: Int): Color =
       Color.fromInt(image.getRGB(x, height - y - 1))
 
+    val mostFrequentColorCache = mutable.Map.empty[Shape, Color]
     def mostFrequentColor(shape: Shape): Color = {
-      if (!frequentColorCache.contains(shape)) {
+      if (!mostFrequentColorCache.contains(shape)) {
         val counts = mutable.Map.empty[Color, Int]
 
         (shape.bottomLeft.x until shape.topRight.x).foreach(x =>
@@ -31,9 +31,9 @@ object Solver {
           })
         )
 
-        frequentColorCache(shape) = counts.maxBy(_._2)._1
+        mostFrequentColorCache(shape) = counts.maxBy(_._2)._1
       }
-      frequentColorCache(shape)
+      mostFrequentColorCache(shape)
     }
 
     def isSameColor(color1: Color, color2: Color): Boolean =
