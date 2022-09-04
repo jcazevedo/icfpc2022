@@ -39,47 +39,6 @@ object Solver {
     def isSameColor(color1: Color, color2: Color): Boolean =
       Scorer.pixelDiff(color1, color2) < ColorDiffTolerance
 
-    val pointCutScoreCache = mutable.Map.empty[(Shape, Coords), Double]
-    def pointCutScore(shape: Shape, coords: Coords): Double = {
-      if (!pointCutScoreCache.contains((shape, coords))) {
-        var sameColor = 0.0
-        var differentColor = 0.0
-
-        (shape.bottomLeft.x until shape.topRight.x).foreach { x =>
-          val up = getOriginalColor(x, coords.y)
-          val down = getOriginalColor(x, coords.y - 1)
-          if (isSameColor(up, down)) sameColor += 1.0
-          else differentColor += 1.0
-        }
-
-        (shape.bottomLeft.y until shape.topRight.y).foreach { y =>
-          val left = getOriginalColor(coords.x - 1, y)
-          val right = getOriginalColor(coords.x, y)
-          if (isSameColor(left, right)) sameColor += 1.0
-          else differentColor += 1.0
-        }
-
-        pointCutScoreCache((shape, coords)) = differentColor / (sameColor + differentColor)
-      }
-      pointCutScoreCache((shape, coords))
-    }
-
-    val bestPointCutsCache = mutable.Map.empty[Shape, List[Coords]]
-
-    def bestPointCuts(shape: Shape): List[Coords] = {
-      if (!bestPointCutsCache.contains(shape)) {
-        val candidates = (1 until shape.width).flatMap { w =>
-          (1 until shape.height).map { h =>
-            val cutCoords = Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h)
-            cutCoords -> pointCutScore(shape, cutCoords)
-          }
-        }
-        bestPointCutsCache(shape) =
-          candidates.filter(_._2 > 0.0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
-      }
-      bestPointCutsCache(shape)
-    }
-
     val lineCutScoreCache = mutable.Map.empty[(Shape, LineCutMove.Orientation, Int), Double]
     def lineCutScore(shape: Shape, orientation: LineCutMove.Orientation, offset: Int): Double = {
       if (!lineCutScoreCache.contains((shape, orientation, offset))) {
@@ -110,7 +69,6 @@ object Solver {
     }
 
     val bestLineCutsCache = mutable.Map.empty[(Shape, LineCutMove.Orientation), List[Int]]
-
     def bestLineCuts(shape: Shape, orientation: LineCutMove.Orientation): List[Int] = {
       if (!bestLineCutsCache.contains((shape, orientation))) {
         val candidates = orientation match {
@@ -131,6 +89,28 @@ object Solver {
           candidates.filter(_._2 > 0.0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
       }
       bestLineCutsCache((shape, orientation))
+    }
+
+    def pointCutScore(shape: Shape, coords: Coords): Double =
+      (lineCutScore(shape, LineCutMove.Vertical, coords.x) * shape.height + lineCutScore(
+        shape,
+        LineCutMove.Horizontal,
+        coords.y
+      ) * shape.width) / (shape.height + shape.width)
+
+    val bestPointCutsCache = mutable.Map.empty[Shape, List[Coords]]
+    def bestPointCuts(shape: Shape): List[Coords] = {
+      if (!bestPointCutsCache.contains(shape)) {
+        val candidates = (1 until shape.width).flatMap { w =>
+          (1 until shape.height).map { h =>
+            val cutCoords = Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h)
+            cutCoords -> pointCutScore(shape, cutCoords)
+          }
+        }
+        bestPointCutsCache(shape) =
+          candidates.filter(_._2 > 0.0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
+      }
+      bestPointCutsCache(shape)
     }
 
     val singleBlockMovesCache = mutable.Map.empty[Block, List[SingleBlockMove]]
