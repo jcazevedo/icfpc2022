@@ -1,6 +1,8 @@
 package icfpc2022
 
 import java.awt.image.BufferedImage
+import java.io.File
+import javax.imageio.ImageIO
 
 import scala.collection.mutable
 
@@ -244,26 +246,6 @@ object Solver {
             enqueueState(SearchNode(afterColors))
           }
         }
-
-      // // Try swap.
-      // current.program.canvas.blocks.foreach { case (swapId, swapBlock) =>
-      //   if (swapId != id) {
-      //     val compatibleShapes =
-      //       block.shape.width == swapBlock.shape.width && block.shape.height == swapBlock.shape.height
-      //     lazy val targetColor = mostFrequentColor(swapBlock.shape)
-
-      //     val trySwap = compatibleShapes && (block match {
-      //       case ComplexBlock(shape, childBlocks) => childBlocks.exists(b => isSameColor(b.color, targetColor))
-      //       case SimpleBlock(shape, color)        => isSameColor(color, targetColor)
-      //     })
-
-      //     if (trySwap) {
-      //       val afterSwap = Interpreter.unsafeApply(current.program, SwapMove(id, swapId))
-      //       val nextNode = SearchNode(afterSwap)
-      //       enqueueState(nextNode)
-      //     }
-      //   }
-      // }
       }
 
       // Try color (every block that we should color).
@@ -277,6 +259,37 @@ object Solver {
         else program
       }
       enqueueState(SearchNode(afterPaint))
+
+      // Try swaps (every block that it makes sense to swap).
+      val (afterSwap, _) = current.program.canvas.blocks.foldLeft((current.program, Set.empty[String])) {
+        case ((program, swapped), (id, block)) =>
+          lazy val targetColor = mostFrequentColor(block.shape)
+          lazy val shouldSwap = !swapped.contains(id) && (block match {
+            case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
+            case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
+          })
+
+          if (shouldSwap) {
+            val targetForSwap = current.program.canvas.blocks.find { case (swapId, swapBlock) =>
+              id != swapId && !swapped.contains(
+                swapId
+              ) && swapBlock.shape.width == block.shape.width && swapBlock.shape.height == block.shape.height && (swapBlock match {
+                case ComplexBlock(_, blocks) => blocks.exists(b => isSameColor(b.color, targetColor))
+                case SimpleBlock(_, color)   => isSameColor(color, targetColor)
+              })
+            }
+            targetForSwap match {
+              case None =>
+                (program, swapped)
+              case Some((swapId, _)) =>
+                (Interpreter.unsafeApply(program, SwapMove(id, swapId)), swapped ++ Set(id, swapId))
+            }
+          } else
+            (program, swapped)
+      }
+      enqueueState(SearchNode(afterSwap))
+      if (expansions == 0)
+        ImageIO.write(Interpreter.paint(afterSwap), "png", new File("test.png"))
 
       if (pq.size > BeamSize)
         pq = pq.dropRight(pq.size - BeamSize)
