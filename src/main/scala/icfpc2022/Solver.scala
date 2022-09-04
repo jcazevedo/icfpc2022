@@ -141,6 +141,9 @@ object Solver {
       lazy val score = Scorer.score(program, image, scoreCache)
     }
 
+    def postProcess(state: SearchNode): SearchNode =
+      state
+
     val start = SearchNode(Program.fromInitialCanvas(initialCanvas))
     var best = start
 
@@ -148,13 +151,13 @@ object Solver {
       Ordering.by((node: SearchNode) => node.score).reverse
 
     var pq = mutable.PriorityQueue.empty[SearchNode]
-
     val visited = mutable.Map.empty[Int, Long]
     def enqueueState(state: SearchNode): Unit = {
-      val hash = state.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
-      if (!visited.contains(hash) || visited(hash) > state.score) {
+      val postProcessedState = postProcess(state)
+      val hash = postProcessedState.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
+      if (!visited.contains(hash) || visited(hash) > postProcessedState.score) {
         visited(hash) = state.score
-        pq.enqueue(state)
+        pq.enqueue(postProcessedState)
       }
     }
 
