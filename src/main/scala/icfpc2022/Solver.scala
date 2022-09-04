@@ -1,8 +1,6 @@
 package icfpc2022
 
 import java.awt.image.BufferedImage
-import java.io.File
-import javax.imageio.ImageIO
 
 import scala.collection.mutable
 
@@ -291,8 +289,6 @@ object Solver {
             (program, swapped)
       }
       enqueueState(SearchNode(afterSwap))
-      if (expansions == 0)
-        ImageIO.write(Interpreter.paint(afterSwap), "png", new File("test.png"))
 
       if (pq.size > BeamSize)
         pq = pq.dropRight(pq.size - BeamSize)
