@@ -253,51 +253,19 @@ object Solver {
               }
             }
           }
-        }
 
-        // Try color (every block that we should color).
-        timers.time("paint expansion") {
-          val afterPaint = current.program.canvas.blocks.foldLeft(current.program) { case (program, (id, block)) =>
+          // Try painting.
+          timers.time("paint expansion") {
             val targetColor = mostFrequentColor(block.shape)
             val shouldPaint = block match {
               case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
               case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
             }
-            if (shouldPaint) Interpreter.unsafeApply(program, ColorMove(id, targetColor))
-            else program
+            if (shouldPaint) {
+              val afterPaint = Interpreter.unsafeApply(current.program, ColorMove(id, targetColor))
+              enqueueState(SearchNode(afterPaint))
+            }
           }
-          enqueueState(SearchNode(afterPaint))
-        }
-
-        // Try swaps (every block that it makes sense to swap).
-        timers.time("swap expansion") {
-          val (afterSwap, _) = current.program.canvas.blocks.foldLeft((current.program, Set.empty[String])) {
-            case ((program, swapped), (id, block)) =>
-              lazy val targetColor = mostFrequentColor(block.shape)
-              lazy val shouldSwap = !swapped.contains(id) && (block match {
-                case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
-                case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
-              })
-
-              if (shouldSwap) {
-                val targetForSwap = current.program.canvas.blocks.find { case (swapId, swapBlock) =>
-                  id != swapId && !swapped.contains(
-                    swapId
-                  ) && swapBlock.shape.width == block.shape.width && swapBlock.shape.height == block.shape.height && (swapBlock match {
-                    case ComplexBlock(_, blocks) => blocks.exists(b => isSameColor(b.color, targetColor))
-                    case SimpleBlock(_, color)   => isSameColor(color, targetColor)
-                  })
-                }
-                targetForSwap match {
-                  case None =>
-                    (program, swapped)
-                  case Some((swapId, _)) =>
-                    (Interpreter.unsafeApply(program, SwapMove(id, swapId)), swapped ++ Set(id, swapId))
-                }
-              } else
-                (program, swapped)
-          }
-          enqueueState(SearchNode(afterSwap))
         }
 
         if (pq.size > BeamSize) {
