@@ -169,16 +169,16 @@ object Solver {
     var best = start
 
     implicit val searchNodeOrdering: Ordering[SearchNode] =
-      Ordering.by((node: SearchNode) => node.score).reverse
+      Ordering.by((node: SearchNode) => node.score)
 
-    var pq = mutable.PriorityQueue.empty[SearchNode]
+    val pq = new BoundedPriorityQueue[SearchNode](BeamSize)
     val visited = mutable.Map.empty[Int, Long]
     def enqueueState(state: SearchNode): Unit = {
       timers.time("enqueuing") {
         val hash = state.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
         if (!visited.contains(hash) || visited(hash) > state.score) {
           visited(hash) = state.score
-          pq.enqueue(state)
+          pq.addOne(state)
         }
       }
     }
@@ -191,7 +191,7 @@ object Solver {
     var ts = System.currentTimeMillis()
     while (pq.nonEmpty && expansions < MaxExpansions) {
       timers.time("expansion") {
-        val current = pq.dequeue()
+        val current = pq.poll()
         if (current.score < best.score)
           best = current
 
@@ -203,19 +203,11 @@ object Solver {
           }
         }
 
-        if (pq.size > BeamSize) {
-          timers.time("beam cut") {
-            pq = pq.take(BeamSize)
-          }
-        }
-
         expansions += 1
         if (expansions % 100 == 0) {
           val diff = System.currentTimeMillis() - ts
           println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
           println(s"Best so far: ${best.score} (${best.program.canvas.blocks.size} blocks)")
-          if (pq.nonEmpty)
-            println(s"Next node score: ${pq.head.score} (${pq.head.program.canvas.blocks.size} blocks)")
           ts = System.currentTimeMillis()
           println()
           timers.outputAll
