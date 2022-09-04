@@ -6,8 +6,8 @@ import scala.collection.mutable
 
 object Solver {
   val BestCutBreadth = 5
-  val BeamSize = 100
-  val MaxExpansions = 1000
+  val BeamSize = 1000
+  val MaxExpansions = 10000
   val ColorDiffTolerance = 30
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
@@ -138,9 +138,6 @@ object Solver {
       lazy val score = timers.time("score")(Scorer.score(program, image, scoreCache))
     }
 
-    def postProcess(state: SearchNode): SearchNode =
-      state
-
     val start = SearchNode(Program.fromInitialCanvas(initialCanvas))
     var best = start
 
@@ -151,11 +148,10 @@ object Solver {
     val visited = mutable.Map.empty[Int, Long]
     def enqueueState(state: SearchNode): Unit = {
       timers.time("enqueuing") {
-        val postProcessedState = postProcess(state)
-        val hash = postProcessedState.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
-        if (!visited.contains(hash) || visited(hash) > postProcessedState.score) {
+        val hash = state.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
+        if (!visited.contains(hash) || visited(hash) > state.score) {
           visited(hash) = state.score
-          pq.enqueue(postProcessedState)
+          pq.enqueue(state)
         }
       }
     }
@@ -179,23 +175,8 @@ object Solver {
               val bestCuts = bestPointCuts(block.shape)
 
               bestCuts.foreach { bestCut =>
-                val afterCut = Interpreter.unsafeApply(
-                  current.program,
-                  PointCutMove(id, bestCut)
-                )
-                val colorMoves = (0 until 4).flatMap { subId =>
-                  val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
-                  val targetColor = mostFrequentColor(targetBlock.shape)
-                  targetBlock match {
-                    case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
-                      Some(ColorMove(s"$id.$subId", targetColor))
-                    case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
-                      Some(ColorMove(s"$id.$subId", targetColor))
-                    case _ => None
-                  }
-                }.toList
-                val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-                enqueueState(SearchNode(afterColors))
+                val afterCut = Interpreter.unsafeApply(current.program, PointCutMove(id, bestCut))
+                enqueueState(SearchNode(afterCut))
               }
             }
           }
@@ -206,23 +187,9 @@ object Solver {
               val bestOffsets = bestLineCuts(block.shape, LineCutMove.Vertical)
 
               bestOffsets.foreach { bestOffset =>
-                val afterCut = Interpreter.unsafeApply(
-                  current.program,
-                  LineCutMove(id, LineCutMove.Vertical, bestOffset)
-                )
-                val colorMoves = (0 until 2).flatMap { subId =>
-                  val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
-                  val targetColor = mostFrequentColor(targetBlock.shape)
-                  targetBlock match {
-                    case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
-                      Some(ColorMove(s"$id.$subId", targetColor))
-                    case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
-                      Some(ColorMove(s"$id.$subId", targetColor))
-                    case _ => None
-                  }
-                }.toList
-                val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-                enqueueState(SearchNode(afterColors))
+                val afterCut =
+                  Interpreter.unsafeApply(current.program, LineCutMove(id, LineCutMove.Vertical, bestOffset))
+                enqueueState(SearchNode(afterCut))
               }
             }
           }
@@ -233,23 +200,9 @@ object Solver {
               val bestOffsets = bestLineCuts(block.shape, LineCutMove.Horizontal)
 
               bestOffsets.foreach { bestOffset =>
-                val afterCut = Interpreter.unsafeApply(
-                  current.program,
-                  LineCutMove(id, LineCutMove.Horizontal, bestOffset)
-                )
-                val colorMoves = (0 until 2).flatMap { subId =>
-                  val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
-                  val targetColor = mostFrequentColor(targetBlock.shape)
-                  targetBlock match {
-                    case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
-                      Some(ColorMove(s"$id.$subId", targetColor))
-                    case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
-                      Some(ColorMove(s"$id.$subId", targetColor))
-                    case _ => None
-                  }
-                }.toList
-                val afterColors = Interpreter.unsafeApply(afterCut, colorMoves)
-                enqueueState(SearchNode(afterColors))
+                val afterCut =
+                  Interpreter.unsafeApply(current.program, LineCutMove(id, LineCutMove.Horizontal, bestOffset))
+                enqueueState(SearchNode(afterCut))
               }
             }
           }
