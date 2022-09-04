@@ -2,7 +2,6 @@ package icfpc2022
 
 import java.awt.image.BufferedImage
 
-import icfpc2022.LineCutMove.{Horizontal, Vertical}
 import icfpc2022.syntax._
 
 object Interpreter {
@@ -252,12 +251,12 @@ object Interpreter {
             val List(smallest, biggest) = List(block1.shape, block2.shape).sorted
 
             lazy val block1Blocks = block1 match {
-              case ComplexBlock(shape, childBlocks) => childBlocks
-              case simpleBlock: SimpleBlock         => Set(simpleBlock)
+              case ComplexBlock(_, childBlocks) => childBlocks
+              case simpleBlock: SimpleBlock     => Set(simpleBlock)
             }
             lazy val block2Blocks = block2 match {
-              case ComplexBlock(shape, childBlocks) => childBlocks
-              case simpleBlock: SimpleBlock         => Set(simpleBlock)
+              case ComplexBlock(_, childBlocks) => childBlocks
+              case simpleBlock: SimpleBlock     => Set(simpleBlock)
             }
 
             if (
@@ -356,7 +355,6 @@ object Interpreter {
   }
 
   def paint(program: Program): BufferedImage = {
-    val width = program.canvas.shape.width
     val height = program.canvas.shape.height
 
     val image =

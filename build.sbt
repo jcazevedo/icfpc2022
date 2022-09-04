@@ -30,6 +30,7 @@ lazy val root = (project in file("."))
       "-deprecation",
       "-language:implicitConversions",
       "-language:higherKinds",
+      "-Wunused:_,-explicits,-implicits",
       "-Ywarn-dead-code",
       "-Ywarn-numeric-widen",
       "-Ywarn-macros:after",

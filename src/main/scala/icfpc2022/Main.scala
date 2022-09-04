@@ -3,15 +3,13 @@ package icfpc2022
 import java.io.{File, PrintWriter}
 import javax.imageio.ImageIO
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Awaitable}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, Multipart, Uri}
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, Multipart}
 import com.typesafe.config.ConfigFactory
 import icfpc2022.syntax._
 import io.circe.parser
@@ -26,7 +24,7 @@ object Main extends App {
   val SUBMIT = config.getBoolean("submit")
   val URL = config.getString("url")
 
-  (26 to 30).foreach { id =>
+  (1 to 25).foreach { id =>
     val problem = s"problems/$id.png"
     val initialCanvasJson = s"problems/$id.initial.json"
     val islFile = s"isls/$id.isl"

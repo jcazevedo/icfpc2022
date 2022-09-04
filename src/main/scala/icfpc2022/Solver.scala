@@ -4,8 +4,6 @@ import java.awt.image.BufferedImage
 
 import scala.collection.mutable
 
-import icfpc2022.LineCutMove.{Horizontal, Vertical}
-
 object Solver {
   val BestCutBreadth = 5
   val BeamSize = 10000
@@ -13,7 +11,6 @@ object Solver {
   val ColorDiffTolerance = 30
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
-    val width = image.getWidth()
     val height = image.getHeight()
 
     val scoreCache = mutable.Map.empty[Block, Double]
@@ -47,7 +44,6 @@ object Solver {
       if (!pointCutDifferencesCache.contains((shape, coords))) {
         var sameColor = 0
         var differentColor = 0
-        var totDiff = shape.width + shape.height
 
         (shape.bottomLeft.x until shape.topRight.x).foreach { x =>
           val up = getOriginalColor(x, coords.y)
@@ -180,9 +176,9 @@ object Solver {
               val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
               val targetColor = mostFrequentColor(targetBlock.shape)
               targetBlock match {
-                case ComplexBlock(shape, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
+                case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
                   Some(ColorMove(s"$id.$subId", targetColor))
-                case SimpleBlock(shape, color) if !isSameColor(color, targetColor) =>
+                case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
                   Some(ColorMove(s"$id.$subId", targetColor))
                 case _ => None
               }
@@ -205,9 +201,9 @@ object Solver {
               val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
               val targetColor = mostFrequentColor(targetBlock.shape)
               targetBlock match {
-                case ComplexBlock(shape, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
+                case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
                   Some(ColorMove(s"$id.$subId", targetColor))
-                case SimpleBlock(shape, color) if !isSameColor(color, targetColor) =>
+                case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
                   Some(ColorMove(s"$id.$subId", targetColor))
                 case _ => None
               }
@@ -230,9 +226,9 @@ object Solver {
               val targetBlock = afterCut.canvas.blocks(s"$id.$subId")
               val targetColor = mostFrequentColor(targetBlock.shape)
               targetBlock match {
-                case ComplexBlock(shape, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
+                case ComplexBlock(_, childBlocks) if childBlocks.exists(b => !isSameColor(b.color, targetColor)) =>
                   Some(ColorMove(s"$id.$subId", targetColor))
-                case SimpleBlock(shape, color) if !isSameColor(color, targetColor) =>
+                case SimpleBlock(_, color) if !isSameColor(color, targetColor) =>
                   Some(ColorMove(s"$id.$subId", targetColor))
                 case _ => None
               }
