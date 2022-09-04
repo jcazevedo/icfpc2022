@@ -24,9 +24,10 @@ object Main extends App {
   val SUBMIT = config.getBoolean("submit")
   val URL = config.getString("url")
 
-  (31 to 35).foreach { id =>
+  (36 to 36).foreach { id =>
     val problem = s"problems/$id.png"
     val initialCanvasJson = s"problems/$id.initial.json"
+    val initialCanvasPNG = s"problems/$id.initial.png"
     val islFile = s"isls/$id.isl"
     val outputFile = s"output/$id.png"
 
@@ -35,12 +36,16 @@ object Main extends App {
     val image = ImageIO.read(new File(problem))
     val initialCanvas = {
       val initialCanvasFile = new File(initialCanvasJson)
+      val initialCanvasPNGFile = new File(initialCanvasPNG)
       if (initialCanvasFile.exists()) {
         val source = scala.io.Source.fromFile(initialCanvasFile)
         val content = source.getLines().mkString
         source.close()
         val json = parser.parse(content).toOption.get
-        Canvas.fromJson(json)
+        val initialImage =
+          if (initialCanvasPNGFile.exists()) Some(ImageIO.read(initialCanvasPNGFile))
+          else None
+        Canvas.fromJson(json, initialImage)
       } else {
         Canvas.blank(image.getWidth(), image.getHeight())
       }

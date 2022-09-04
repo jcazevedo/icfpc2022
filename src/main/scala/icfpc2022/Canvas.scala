@@ -1,5 +1,8 @@
 package icfpc2022
 
+import java.awt.image.BufferedImage
+
+import cats.syntax.functor._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
 
@@ -34,21 +37,60 @@ object Canvas {
     Canvas(fullShape, Map("0" -> SimpleBlock(fullShape, Color(255, 255, 255, 255))))
   }
 
-  def fromJson(json: Json): Canvas = {
+  def fromJson(json: Json, initialImage: Option[BufferedImage]): Canvas = {
     val simpleCanvas = json.as[SimpleCanvas].toOption.get
     Canvas(
       Shape(Coords(0, 0), simpleCanvas.width, simpleCanvas.height),
-      simpleCanvas.blocks.map { case SimpleBlockWithId(id, bottomLeft, topRight, color) =>
-        id -> SimpleBlock(Shape(bottomLeft, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y), color)
+      simpleCanvas.blocks.map {
+        case SimpleBlockWithColor(id, bottomLeft, topRight, color) =>
+          id -> SimpleBlock(Shape(bottomLeft, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y), color)
+        case SimpleBlockWithImage(id, bottomLeft, topRight, Coords(pngX, pngY)) => {
+          val shape = Shape(bottomLeft, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y)
+          id -> ComplexBlock(
+            shape,
+            (0 until shape.width).flatMap { w =>
+              (0 until shape.height).map { h =>
+                SimpleBlock(
+                  Shape(Coords(bottomLeft.x + w, bottomLeft.y + h), 1, 1),
+                  Color.fromInt(initialImage.get.getRGB(pngX + w, initialImage.get.getHeight() - (pngY + h) - 1))
+                )
+              }.toSet
+            }.toSet
+          )
+        }
       }.toMap
     )
   }
 
-  case class SimpleBlockWithId(blockId: String, bottomLeft: Coords, topRight: Coords, color: Color)
+  sealed trait SimpleBlockWithId {
+    def blockId: String
+    def bottomLeft: Coords
+    def topRight: Coords
+  }
 
   object SimpleBlockWithId {
-    implicit val simpleBlockWithIdEncoder: Encoder[SimpleBlockWithId] = deriveEncoder
-    implicit val simpleBlockWithIdDecoder: Decoder[SimpleBlockWithId] = deriveDecoder
+    implicit val simpleBlockWithIdEncoder: Encoder[SimpleBlockWithId] = Encoder.instance {
+      case x: SimpleBlockWithColor => Encoder[SimpleBlockWithColor].apply(x)
+      case x: SimpleBlockWithImage => Encoder[SimpleBlockWithImage].apply(x)
+    }
+    implicit val simpleBlockWithIdDecoder: Decoder[SimpleBlockWithId] =
+      Decoder[SimpleBlockWithColor].widen or Decoder[SimpleBlockWithImage].widen
+  }
+
+  case class SimpleBlockWithColor(blockId: String, bottomLeft: Coords, topRight: Coords, color: Color)
+      extends SimpleBlockWithId
+
+  object SimpleBlockWithColor {
+    implicit val simpleBlockWithColorEncoder: Encoder[SimpleBlockWithColor] = deriveEncoder
+    implicit val simpleBlockWithColorDecoder: Decoder[SimpleBlockWithColor] = deriveDecoder
+  }
+
+  case class SimpleBlockWithImage(blockId: String, bottomLeft: Coords, topRight: Coords, pngBottomLeftPoint: Coords)
+      extends SimpleBlockWithId
+
+  object SimpleBlockWithImage {
+    implicit val simpleBlockWithImageEncoder: Encoder[SimpleBlockWithImage] = deriveEncoder
+    implicit val simpleBlockWithImageDecoder: Decoder[SimpleBlockWithImage] = deriveDecoder
   }
 
   case class SimpleCanvas(width: Int, height: Int, blocks: List[SimpleBlockWithId])
