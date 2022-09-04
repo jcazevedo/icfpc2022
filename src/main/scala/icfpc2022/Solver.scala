@@ -4,6 +4,8 @@ import java.awt.image.BufferedImage
 
 import scala.collection.mutable
 
+import icfpc2022.LineCutMove.{Horizontal, Vertical}
+
 object Solver {
   val BestCutBreadth = 5
   val BeamSize = 10000
@@ -66,6 +68,22 @@ object Solver {
       pointCutDifferencesCache((shape, coords))
     }
 
+    val bestPointCutsCache = mutable.Map.empty[Shape, List[Coords]]
+
+    def bestPointCuts(shape: Shape): List[Coords] = {
+      if (!bestPointCutsCache.contains(shape)) {
+        val candidates = (1 until shape.width).flatMap { w =>
+          (1 until shape.height).map { h =>
+            val cutCoords = Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h)
+            cutCoords -> pointCutDifferences(shape, cutCoords)
+          }
+        }
+        bestPointCutsCache(shape) =
+          candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
+      }
+      bestPointCutsCache(shape)
+    }
+
     val lineCutDifferencesCache = mutable.Map.empty[(Shape, LineCutMove.Orientation, Int), Int]
 
     def lineCutDifferences(shape: Shape, orientation: LineCutMove.Orientation, offset: Int) = {
@@ -94,6 +112,30 @@ object Solver {
         lineCutDifferencesCache((shape, orientation, offset)) = differentColor
       }
       lineCutDifferencesCache((shape, orientation, offset))
+    }
+
+    val bestLineCutsCache = mutable.Map.empty[(Shape, LineCutMove.Orientation), List[Int]]
+
+    def bestLineCuts(shape: Shape, orientation: LineCutMove.Orientation): List[Int] = {
+      if (!bestLineCutsCache.contains((shape, orientation))) {
+        val candidates = orientation match {
+          case LineCutMove.Vertical =>
+            (1 until shape.width).map { w =>
+              val offset = shape.bottomLeft.x + w
+              offset -> lineCutDifferences(shape, LineCutMove.Vertical, offset)
+            }
+
+          case LineCutMove.Horizontal =>
+            (1 until shape.height).map { h =>
+              val offset = shape.bottomLeft.y + h
+              offset -> lineCutDifferences(shape, LineCutMove.Horizontal, offset)
+            }
+        }
+
+        bestLineCutsCache((shape, orientation)) =
+          candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
+      }
+      bestLineCutsCache((shape, orientation))
     }
 
     case class SearchNode(program: Program) {
@@ -127,14 +169,7 @@ object Solver {
       current.program.canvas.blocks.foreach { case (id, block) =>
         // Try point cuts.
         if (block.shape.width > 1 && block.shape.height > 1) {
-          val candidates = (1 until block.shape.width).flatMap { w =>
-            (1 until block.shape.height).map { h =>
-              val cutCoords = Coords(block.shape.bottomLeft.x + w, block.shape.bottomLeft.y + h)
-              cutCoords -> pointCutDifferences(block.shape, cutCoords)
-            }
-          }
-
-          val bestCuts = candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
+          val bestCuts = bestPointCuts(block.shape)
 
           bestCuts.foreach { bestCut =>
             val afterCut = Interpreter.unsafeApply(
@@ -159,12 +194,7 @@ object Solver {
 
         // Try vertical cuts.
         if (block.shape.width > 1) {
-          val candidates = (1 until block.shape.width).map { w =>
-            val offset = block.shape.bottomLeft.x + w
-            offset -> lineCutDifferences(block.shape, LineCutMove.Vertical, offset)
-          }
-
-          val bestOffsets = candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
+          val bestOffsets = bestLineCuts(block.shape, LineCutMove.Vertical)
 
           bestOffsets.foreach { bestOffset =>
             val afterCut = Interpreter.unsafeApply(
@@ -189,12 +219,7 @@ object Solver {
 
         // Try horizontal cuts.
         if (block.shape.height > 1) {
-          val candidates = (1 until block.shape.height).map { h =>
-            val offset = block.shape.bottomLeft.y + h
-            offset -> lineCutDifferences(block.shape, LineCutMove.Horizontal, offset)
-          }
-
-          val bestOffsets = candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1)
+          val bestOffsets = bestLineCuts(block.shape, LineCutMove.Horizontal)
 
           bestOffsets.foreach { bestOffset =>
             val afterCut = Interpreter.unsafeApply(
