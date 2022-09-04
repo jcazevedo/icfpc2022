@@ -176,6 +176,8 @@ object Solver {
         def compare(o1: SearchNode, o2: SearchNode): Int =
           if (o1.score < o2.score) -1
           else if (o1.score > o2.score) 1
+          else if (o1.similarity < o2.similarity) -1
+          else if (o1.similarity > o2.similarity) 1
           else 0
       })
       .maximumSize(BeamSize)
