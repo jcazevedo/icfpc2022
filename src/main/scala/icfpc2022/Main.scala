@@ -24,7 +24,7 @@ object Main extends App {
   val SUBMIT = config.getBoolean("submit")
   val URL = config.getString("url")
 
-  (36 to 40).foreach { id =>
+  (1 to 1).foreach { id =>
     val problem = s"problems/$id.png"
     val initialCanvasJson = s"problems/$id.initial.json"
     val initialCanvasPNG = s"problems/$id.initial.png"

@@ -133,6 +133,55 @@ object Solver {
       bestLineCutsCache((shape, orientation))
     }
 
+    val singleBlockMovesCache = mutable.Map.empty[Block, List[SingleBlockMove]]
+    def singleBlockMoves(id: String, block: Block): List[SingleBlockMove] = {
+      if (!singleBlockMovesCache.contains(block)) {
+        val moves = mutable.ListBuffer.empty[SingleBlockMove]
+
+        // Try point cuts.
+        if (block.shape.width > 1 && block.shape.height > 1) {
+          timers.time("point cut expansion") {
+            val bestCuts = bestPointCuts(block.shape)
+            bestCuts.foreach(bestCut => moves.addOne(PointCutMove(id, bestCut)))
+          }
+        }
+
+        // Try vertical cuts.
+        if (block.shape.width > 1) {
+          timers.time("vertical cut expansion") {
+            val bestOffsets = bestLineCuts(block.shape, LineCutMove.Vertical)
+            bestOffsets.foreach(bestOffset => moves.addOne(LineCutMove(id, LineCutMove.Vertical, bestOffset)))
+          }
+        }
+
+        // Try horizontal cuts.
+        if (block.shape.height > 1) {
+          timers.time("horizontal cut expansion") {
+            val bestOffsets = bestLineCuts(block.shape, LineCutMove.Horizontal)
+            bestOffsets.foreach(bestOffset => moves.addOne(LineCutMove(id, LineCutMove.Horizontal, bestOffset)))
+          }
+        }
+
+        // Try painting.
+        timers.time("paint expansion") {
+          val targetColor = mostFrequentColor(block.shape)
+          val shouldPaint = block match {
+            case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
+            case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
+          }
+          if (shouldPaint) moves.addOne(ColorMove(id, targetColor))
+        }
+
+        singleBlockMovesCache(block) = moves.toList
+      }
+
+      singleBlockMovesCache(block).map {
+        case move: LineCutMove  => move.copy(blockId = id)
+        case move: PointCutMove => move.copy(blockId = id)
+        case move: ColorMove    => move.copy(blockId = id)
+      }
+    }
+
     case class SearchNode(program: Program) {
       lazy val similarity = Scorer.similarity(program, image, scoreCache)
       lazy val score = timers.time("score")(Scorer.score(program, image, scoreCache))
@@ -169,56 +218,8 @@ object Solver {
           best = current
 
         current.program.canvas.blocks.foreach { case (id, block) =>
-          // Try point cuts.
-          if (block.shape.width > 1 && block.shape.height > 1) {
-            timers.time("point cut expansion") {
-              val bestCuts = bestPointCuts(block.shape)
-
-              bestCuts.foreach { bestCut =>
-                val afterCut = Interpreter.unsafeApply(current.program, PointCutMove(id, bestCut))
-                enqueueState(SearchNode(afterCut))
-              }
-            }
-          }
-
-          // Try vertical cuts.
-          if (block.shape.width > 1) {
-            timers.time("vertical cut expansion") {
-              val bestOffsets = bestLineCuts(block.shape, LineCutMove.Vertical)
-
-              bestOffsets.foreach { bestOffset =>
-                val afterCut =
-                  Interpreter.unsafeApply(current.program, LineCutMove(id, LineCutMove.Vertical, bestOffset))
-                enqueueState(SearchNode(afterCut))
-              }
-            }
-          }
-
-          // Try horizontal cuts.
-          if (block.shape.height > 1) {
-            timers.time("horizontal cut expansion") {
-              val bestOffsets = bestLineCuts(block.shape, LineCutMove.Horizontal)
-
-              bestOffsets.foreach { bestOffset =>
-                val afterCut =
-                  Interpreter.unsafeApply(current.program, LineCutMove(id, LineCutMove.Horizontal, bestOffset))
-                enqueueState(SearchNode(afterCut))
-              }
-            }
-          }
-
-          // Try painting.
-          timers.time("paint expansion") {
-            val targetColor = mostFrequentColor(block.shape)
-            val shouldPaint = block match {
-              case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
-              case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
-            }
-            if (shouldPaint) {
-              val afterPaint = Interpreter.unsafeApply(current.program, ColorMove(id, targetColor))
-              enqueueState(SearchNode(afterPaint))
-            }
-          }
+          val moves = singleBlockMoves(id, block)
+          moves.foreach(move => enqueueState(SearchNode(Interpreter.unsafeApply(current.program, move))))
         }
 
         if (pq.size > BeamSize) {
