@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 object Solver {
   val BestCutBreadth = 5
-  val BeamSize = 1000
+  val BeamSize = 400000
   val MaxExpansions = 10000
   val ColorDiffTolerance = 30
 
@@ -196,8 +196,11 @@ object Solver {
           best = current
 
         current.program.canvas.blocks.foreach { case (id, block) =>
-          val moves = singleBlockMoves(id, block)
-          moves.foreach(move => enqueueState(SearchNode(Interpreter.unsafeApply(current.program, move))))
+          val moves = timers.time("get moves")(singleBlockMoves(id, block))
+          moves.foreach { move =>
+            val nextProgram = timers.time("apply move")(Interpreter.unsafeApply(current.program, move))
+            enqueueState(SearchNode(nextProgram))
+          }
         }
 
         if (pq.size > BeamSize) {
