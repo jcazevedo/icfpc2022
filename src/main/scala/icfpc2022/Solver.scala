@@ -91,22 +91,20 @@ object Solver {
       bestLineCutsCache((shape, orientation))
     }
 
-    def pointCutScore(shape: Shape, coords: Coords): Double =
-      (lineCutScore(shape, LineCutMove.Vertical, coords.x) * shape.height + lineCutScore(
-        shape,
-        LineCutMove.Horizontal,
-        coords.y
-      ) * shape.width) / (shape.height + shape.width)
-
     val bestPointCutsCache = mutable.Map.empty[Shape, List[Coords]]
     def bestPointCuts(shape: Shape): List[Coords] = {
       if (!bestPointCutsCache.contains(shape)) {
-        val candidates = (1 until shape.width).flatMap { w =>
-          (1 until shape.height).map { h =>
-            val cutCoords = Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h)
-            cutCoords -> pointCutScore(shape, cutCoords)
-          }
-        }
+        val verticalCandidates =
+          (1 until shape.width).map(w => w -> lineCutScore(shape, LineCutMove.Vertical, shape.bottomLeft.x + w))
+        val horizontalCandidates =
+          (1 until shape.height).map(h => h -> lineCutScore(shape, LineCutMove.Horizontal, shape.bottomLeft.y + h))
+
+        val candidates = for {
+          (w, vs) <- verticalCandidates
+          (h, hs) <- horizontalCandidates
+          score = (vs * shape.height + hs * shape.width) / (shape.height + shape.width)
+        } yield (Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h) -> score)
+
         bestPointCutsCache(shape) =
           candidates.filter(_._2 > 0.0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
       }
