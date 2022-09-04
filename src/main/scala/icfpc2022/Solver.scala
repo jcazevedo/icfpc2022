@@ -39,30 +39,29 @@ object Solver {
     def isSameColor(color1: Color, color2: Color): Boolean =
       Scorer.pixelDiff(color1, color2) < ColorDiffTolerance
 
-    val pointCutDifferencesCache = mutable.Map.empty[(Shape, Coords), Int]
-
-    def pointCutDifferences(shape: Shape, coords: Coords): Int = {
-      if (!pointCutDifferencesCache.contains((shape, coords))) {
-        var sameColor = 0
-        var differentColor = 0
+    val pointCutScoreCache = mutable.Map.empty[(Shape, Coords), Double]
+    def pointCutScore(shape: Shape, coords: Coords): Double = {
+      if (!pointCutScoreCache.contains((shape, coords))) {
+        var sameColor = 0.0
+        var differentColor = 0.0
 
         (shape.bottomLeft.x until shape.topRight.x).foreach { x =>
           val up = getOriginalColor(x, coords.y)
           val down = getOriginalColor(x, coords.y - 1)
-          if (isSameColor(up, down)) sameColor += 1
-          else differentColor += 1
+          if (isSameColor(up, down)) sameColor += 1.0
+          else differentColor += 1.0
         }
 
         (shape.bottomLeft.y until shape.topRight.y).foreach { y =>
           val left = getOriginalColor(coords.x - 1, y)
           val right = getOriginalColor(coords.x, y)
-          if (isSameColor(left, right)) sameColor += 1
-          else differentColor += 1
+          if (isSameColor(left, right)) sameColor += 1.0
+          else differentColor += 1.0
         }
 
-        pointCutDifferencesCache((shape, coords)) = differentColor
+        pointCutScoreCache((shape, coords)) = differentColor / (sameColor + differentColor)
       }
-      pointCutDifferencesCache((shape, coords))
+      pointCutScoreCache((shape, coords))
     }
 
     val bestPointCutsCache = mutable.Map.empty[Shape, List[Coords]]
@@ -72,43 +71,42 @@ object Solver {
         val candidates = (1 until shape.width).flatMap { w =>
           (1 until shape.height).map { h =>
             val cutCoords = Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h)
-            cutCoords -> pointCutDifferences(shape, cutCoords)
+            cutCoords -> pointCutScore(shape, cutCoords)
           }
         }
         bestPointCutsCache(shape) =
-          candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
+          candidates.filter(_._2 > 0.0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
       }
       bestPointCutsCache(shape)
     }
 
-    val lineCutDifferencesCache = mutable.Map.empty[(Shape, LineCutMove.Orientation, Int), Int]
-
-    def lineCutDifferences(shape: Shape, orientation: LineCutMove.Orientation, offset: Int) = {
-      if (!lineCutDifferencesCache.contains((shape, orientation, offset))) {
-        var sameColor = 0
-        var differentColor = 0
+    val lineCutScoreCache = mutable.Map.empty[(Shape, LineCutMove.Orientation, Int), Double]
+    def lineCutScore(shape: Shape, orientation: LineCutMove.Orientation, offset: Int): Double = {
+      if (!lineCutScoreCache.contains((shape, orientation, offset))) {
+        var sameColor = 0.0
+        var differentColor = 0.0
 
         orientation match {
           case LineCutMove.Horizontal =>
             (shape.bottomLeft.x until shape.topRight.x).foreach { x =>
               val up = getOriginalColor(x, offset)
               val down = getOriginalColor(x, offset - 1)
-              if (isSameColor(up, down)) sameColor += 1
-              else differentColor += 1
+              if (isSameColor(up, down)) sameColor += 1.0
+              else differentColor += 1.0
             }
 
           case LineCutMove.Vertical =>
             (shape.bottomLeft.y until shape.topRight.y).foreach { y =>
               val left = getOriginalColor(offset - 1, y)
               val right = getOriginalColor(offset, y)
-              if (isSameColor(left, right)) sameColor += 1
-              else differentColor += 1
+              if (isSameColor(left, right)) sameColor += 1.0
+              else differentColor += 1.0
             }
         }
 
-        lineCutDifferencesCache((shape, orientation, offset)) = differentColor
+        lineCutScoreCache((shape, orientation, offset)) = differentColor / (sameColor + differentColor)
       }
-      lineCutDifferencesCache((shape, orientation, offset))
+      lineCutScoreCache((shape, orientation, offset))
     }
 
     val bestLineCutsCache = mutable.Map.empty[(Shape, LineCutMove.Orientation), List[Int]]
@@ -119,18 +117,18 @@ object Solver {
           case LineCutMove.Vertical =>
             (1 until shape.width).map { w =>
               val offset = shape.bottomLeft.x + w
-              offset -> lineCutDifferences(shape, LineCutMove.Vertical, offset)
+              offset -> lineCutScore(shape, LineCutMove.Vertical, offset)
             }
 
           case LineCutMove.Horizontal =>
             (1 until shape.height).map { h =>
               val offset = shape.bottomLeft.y + h
-              offset -> lineCutDifferences(shape, LineCutMove.Horizontal, offset)
+              offset -> lineCutScore(shape, LineCutMove.Horizontal, offset)
             }
         }
 
         bestLineCutsCache((shape, orientation)) =
-          candidates.filter(_._2 > 0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
+          candidates.filter(_._2 > 0.0).sortBy(_._2).reverse.take(BestCutBreadth).map(_._1).toList
       }
       bestLineCutsCache((shape, orientation))
     }
