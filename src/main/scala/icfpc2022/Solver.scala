@@ -8,6 +8,7 @@ object Solver {
   val BestCutBreadth = 5
   val BeamSize = 10000
   val MaxIterations = 1000
+  val ColorDiffTolerance = 30
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
     val width = image.getWidth()
@@ -36,7 +37,7 @@ object Solver {
     }
 
     def isSameColor(color1: Color, color2: Color): Boolean =
-      Scorer.pixelDiff(color1, color2) < 30
+      Scorer.pixelDiff(color1, color2) < ColorDiffTolerance
 
     val pointCutDifferencesCache = mutable.Map.empty[(Shape, Coords), Int]
 
@@ -115,6 +116,7 @@ object Solver {
     println(s"Start score: ${start.score}")
 
     var iterations = 0
+    var ts = System.currentTimeMillis()
     while (pq.nonEmpty && iterations < MaxIterations) {
       val current = pq.dequeue()
       if (current.score < best.score) {
@@ -215,45 +217,48 @@ object Solver {
           }
         }
 
-        // Try color.
-        val targetColor = mostFrequentColor(block.shape)
-        val shouldPaint = block match {
-          case ComplexBlock(_, childBlocks) => childBlocks.exists(b => !isSameColor(b.color, targetColor))
-          case SimpleBlock(_, color)        => !isSameColor(color, targetColor)
-        }
-        if (shouldPaint) {
-          val afterPaint = Interpreter.unsafeApply(current.program, ColorMove(id, targetColor))
-          val nextNode = SearchNode(afterPaint)
-          enqueueState(nextNode)
-        }
+      // Try color.
+      // val targetColor = mostFrequentColor(block.shape)
+      // val shouldPaint = block match {
+      //   case ComplexBlock(_, childBlocks) => childBlocks.exists(b => !isSameColor(b.color, targetColor))
+      //   case SimpleBlock(_, color)        => !isSameColor(color, targetColor)
+      // }
+      // if (shouldPaint) {
+      //   val afterPaint = Interpreter.unsafeApply(current.program, ColorMove(id, targetColor))
+      //   val nextNode = SearchNode(afterPaint)
+      //   enqueueState(nextNode)
+      // }
 
-        // Try swap.
-        current.program.canvas.blocks.foreach { case (swapId, swapBlock) =>
-          if (swapId != id) {
-            val compatibleShapes =
-              block.shape.width == swapBlock.shape.width && block.shape.height == swapBlock.shape.height
-            lazy val targetColor = mostFrequentColor(swapBlock.shape)
+      // // Try swap.
+      // current.program.canvas.blocks.foreach { case (swapId, swapBlock) =>
+      //   if (swapId != id) {
+      //     val compatibleShapes =
+      //       block.shape.width == swapBlock.shape.width && block.shape.height == swapBlock.shape.height
+      //     lazy val targetColor = mostFrequentColor(swapBlock.shape)
 
-            val trySwap = compatibleShapes && (block match {
-              case ComplexBlock(shape, childBlocks) => childBlocks.exists(b => isSameColor(b.color, targetColor))
-              case SimpleBlock(shape, color)        => isSameColor(color, targetColor)
-            })
+      //     val trySwap = compatibleShapes && (block match {
+      //       case ComplexBlock(shape, childBlocks) => childBlocks.exists(b => isSameColor(b.color, targetColor))
+      //       case SimpleBlock(shape, color)        => isSameColor(color, targetColor)
+      //     })
 
-            if (trySwap) {
-              val afterSwap = Interpreter.unsafeApply(current.program, SwapMove(id, swapId))
-              val nextNode = SearchNode(afterSwap)
-              enqueueState(nextNode)
-            }
-          }
-        }
+      //     if (trySwap) {
+      //       val afterSwap = Interpreter.unsafeApply(current.program, SwapMove(id, swapId))
+      //       val nextNode = SearchNode(afterSwap)
+      //       enqueueState(nextNode)
+      //     }
+      //   }
+      // }
       }
 
       if (pq.size > BeamSize)
         pq = pq.dropRight(pq.size - BeamSize)
 
       iterations += 1
-      if (iterations % 100 == 0)
-        println(s"Ran $iterations iterations...")
+      if (iterations % 100 == 0) {
+        val diff = ts - System.currentTimeMillis()
+        println(s"Ran $iterations iterations in ${diff}ms...")
+        ts = System.currentTimeMillis()
+      }
     }
 
     best.program
