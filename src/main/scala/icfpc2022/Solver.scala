@@ -1,8 +1,11 @@
 package icfpc2022
 
 import java.awt.image.BufferedImage
+import java.util.Comparator
 
 import scala.collection.mutable
+
+import com.google.common.collect.MinMaxPriorityQueue
 
 object Solver {
   val BestCutBreadth = 5
@@ -168,17 +171,22 @@ object Solver {
     val start = SearchNode(initialProgram)
     var best = start
 
-    implicit val searchNodeOrdering: Ordering[SearchNode] =
-      Ordering.by((node: SearchNode) => node.score)
-
-    val pq = new BoundedPriorityQueue[SearchNode](BeamSize)
+    val pq: MinMaxPriorityQueue[SearchNode] = MinMaxPriorityQueue
+      .orderedBy(new Comparator[SearchNode] {
+        def compare(o1: SearchNode, o2: SearchNode): Int =
+          if (o1.score < o2.score) -1
+          else if (o1.score > o2.score) 1
+          else 0
+      })
+      .maximumSize(BeamSize)
+      .create()
     val visited = mutable.Map.empty[Int, Long]
     def enqueueState(state: SearchNode): Unit = {
       timers.time("enqueuing") {
         val hash = state.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
         if (!visited.contains(hash) || visited(hash) > state.score) {
           visited(hash) = state.score
-          pq.addOne(state)
+          pq.add(state)
         }
       }
     }
@@ -189,7 +197,7 @@ object Solver {
 
     var expansions = 0
     var ts = System.currentTimeMillis()
-    while (pq.nonEmpty && expansions < MaxExpansions) {
+    while (!pq.isEmpty && expansions < MaxExpansions) {
       timers.time("expansion") {
         val current = pq.poll()
         if (current.score < best.score)

@@ -16,6 +16,7 @@ lazy val root = (project in file("."))
       circeCore,
       circeGeneric,
       circeParser,
+      guava,
       scalaTest % Test
     ),
     scalafmtOnCompile := true,
