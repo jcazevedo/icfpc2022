@@ -6,9 +6,9 @@ import scala.collection.mutable
 
 object Solver {
   val BestCutBreadth = 5
-  val BeamSize = 100
-  val MaxIterations = 5000
-  val ColorDiffTolerance = 20
+  val BeamSize = 1000
+  val MaxExpansions = 2000
+  val ColorDiffTolerance = 30
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
     val height = image.getHeight()
@@ -146,8 +146,15 @@ object Solver {
       Ordering.by((node: SearchNode) => node.score).reverse
 
     var pq = mutable.PriorityQueue.empty[SearchNode]
-    def enqueueState(state: SearchNode): Unit =
-      pq.enqueue(state)
+
+    val visited = mutable.Map.empty[Int, Long]
+    def enqueueState(state: SearchNode): Unit = {
+      val hash = state.program.canvas.simpleBlockSet.map(b => (b.shape, b.color)).hashCode()
+      if (!visited.contains(hash) || visited(hash) > state.score) {
+        visited(hash) = state.score
+        pq.enqueue(state)
+      }
+    }
 
     enqueueState(start)
 
@@ -155,7 +162,7 @@ object Solver {
 
     var expansions = 0
     var ts = System.currentTimeMillis()
-    while (pq.nonEmpty && expansions < MaxIterations) {
+    while (pq.nonEmpty && expansions < MaxExpansions) {
       val current = pq.dequeue()
       if (current.score < best.score) {
         println(s"New best score: ${current.score}")
