@@ -255,7 +255,7 @@ object Solver {
 
       iterations += 1
       if (iterations % 100 == 0) {
-        val diff = ts - System.currentTimeMillis()
+        val diff = System.currentTimeMillis() - ts
         println(s"Ran $iterations iterations in ${diff}ms...")
         ts = System.currentTimeMillis()
       }
