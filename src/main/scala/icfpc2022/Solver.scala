@@ -245,18 +245,6 @@ object Solver {
           }
         }
 
-      // Try color.
-      // val targetColor = mostFrequentColor(block.shape)
-      // val shouldPaint = block match {
-      //   case ComplexBlock(_, childBlocks) => childBlocks.exists(b => !isSameColor(b.color, targetColor))
-      //   case SimpleBlock(_, color)        => !isSameColor(color, targetColor)
-      // }
-      // if (shouldPaint) {
-      //   val afterPaint = Interpreter.unsafeApply(current.program, ColorMove(id, targetColor))
-      //   val nextNode = SearchNode(afterPaint)
-      //   enqueueState(nextNode)
-      // }
-
       // // Try swap.
       // current.program.canvas.blocks.foreach { case (swapId, swapBlock) =>
       //   if (swapId != id) {
@@ -277,6 +265,18 @@ object Solver {
       //   }
       // }
       }
+
+      // Try color (every block that we should color).
+      val afterPaint = current.program.canvas.blocks.foldLeft(current.program) { case (program, (id, block)) =>
+        val targetColor = mostFrequentColor(block.shape)
+        val shouldPaint = block match {
+          case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
+          case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
+        }
+        if (shouldPaint) Interpreter.unsafeApply(program, ColorMove(id, targetColor))
+        else program
+      }
+      enqueueState(SearchNode(afterPaint))
 
       if (pq.size > BeamSize)
         pq = pq.dropRight(pq.size - BeamSize)
