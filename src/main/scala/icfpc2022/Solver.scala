@@ -14,7 +14,7 @@ object Solver {
     val timers = new Timers
     val height = image.getHeight()
 
-    val scoreCache = mutable.Map.empty[Block, Double]
+    val scoreCache = mutable.Map.empty[(Shape, Color), Double]
     val frequentColorCache = mutable.Map.empty[Shape, Color]
 
     def getOriginalColor(x: Int, y: Int): Color =

@@ -16,26 +16,27 @@ object Scorer {
   def similarity(
       p: Program,
       image: BufferedImage,
-      cache: mutable.Map[Block, Double] = mutable.Map.empty[Block, Double]
+      cache: mutable.Map[(Shape, Color), Double] = mutable.Map.empty[(Shape, Color), Double]
   ): Long = {
     lazy val height = image.getHeight()
 
     def blockDiff(block: Block): Double = {
-      if (!cache.contains(block))
-        cache(block) = block match {
-          case SimpleBlock(shape, color) =>
-            (shape.bottomLeft.x until shape.topRight.x)
+      block match {
+        case SimpleBlock(shape, color) =>
+          if (!cache.contains((shape, color))) {
+            cache((shape, color)) = (shape.bottomLeft.x until shape.topRight.x)
               .map(x =>
                 (shape.bottomLeft.y until shape.topRight.y)
                   .map(y => pixelDiff(color, Color.fromInt(image.getRGB(x, height - y - 1))))
                   .sum
               )
               .sum
+          }
+          cache((shape, color))
 
-          case ComplexBlock(_, childBlocks) =>
-            childBlocks.map(blockDiff).sum
-        }
-      cache(block)
+        case ComplexBlock(_, childBlocks) =>
+          childBlocks.map(blockDiff).sum
+      }
     }
 
     val diff = p.canvas.blocks.values.map(blockDiff).sum
@@ -47,7 +48,7 @@ object Scorer {
   def score(
       program: Program,
       target: BufferedImage,
-      cache: mutable.Map[Block, Double] = mutable.Map.empty[Block, Double]
+      cache: mutable.Map[(Shape, Color), Double] = mutable.Map.empty[(Shape, Color), Double]
   ): Long =
     program.cost + similarity(program, target, cache)
 }
