@@ -34,7 +34,7 @@ object Main extends App {
     println(s"Starting to solve problem $problem...")
 
     val image = ImageIO.read(new File(problem))
-    val initialCanvas = {
+    val initialProgram = {
       val initialCanvasFile = new File(initialCanvasJson)
       val initialCanvasPNGFile = new File(initialCanvasPNG)
       if (initialCanvasFile.exists()) {
@@ -45,12 +45,12 @@ object Main extends App {
         val initialImage =
           if (initialCanvasPNGFile.exists()) Some(ImageIO.read(initialCanvasPNGFile))
           else None
-        Canvas.fromJson(json, initialImage)
+        Program.fromInitialCanvas(Canvas.fromJson(json, initialImage))
       } else {
-        Canvas.blank(image.getWidth(), image.getHeight())
+        Program.fromInitialCanvas(Canvas.blank(image.getWidth(), image.getHeight()))
       }
     }
-    val p = Solver.solve(image, initialCanvas)
+    val p = Solver.solve(image, initialProgram)
     val isl = p.isl
     val cost = Scorer.score(p, image)
 

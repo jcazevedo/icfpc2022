@@ -10,7 +10,7 @@ object Solver {
   val MaxExpansions = 10000
   val ColorDiffTolerance = 30
 
-  def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
+  def solve(image: BufferedImage, initialProgram: Program): Program = {
     val timers = new Timers
     val height = image.getHeight()
 
@@ -138,7 +138,7 @@ object Solver {
       lazy val score = timers.time("score")(Scorer.score(program, image, scoreCache))
     }
 
-    val start = SearchNode(Program.fromInitialCanvas(initialCanvas))
+    val start = SearchNode(initialProgram)
     var best = start
 
     implicit val searchNodeOrdering: Ordering[SearchNode] =
