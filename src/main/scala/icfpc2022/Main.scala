@@ -24,7 +24,7 @@ object Main extends App {
   val SUBMIT = config.getBoolean("submit")
   val URL = config.getString("url")
 
-  (36 to 36).foreach { id =>
+  (36 to 40).foreach { id =>
     val problem = s"problems/$id.png"
     val initialCanvasJson = s"problems/$id.initial.json"
     val initialCanvasPNG = s"problems/$id.initial.png"
@@ -45,7 +45,10 @@ object Main extends App {
         val initialImage =
           if (initialCanvasPNGFile.exists()) Some(ImageIO.read(initialCanvasPNGFile))
           else None
-        Program.fromInitialCanvas(Canvas.fromJson(json, initialImage), initialImage.fold(Program.BaseScores.default)(_ => Program.BaseScores.v2))
+        Program.fromInitialCanvas(
+          Canvas.fromJson(json, initialImage),
+          initialImage.fold(Program.BaseScores.default)(_ => Program.BaseScores.v2)
+        )
       } else {
         Program.fromInitialCanvas(Canvas.blank(image.getWidth(), image.getHeight()), Program.BaseScores.default)
       }

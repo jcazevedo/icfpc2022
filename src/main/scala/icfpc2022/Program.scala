@@ -7,11 +7,11 @@ object Program {
     Program(canvas, List.empty, canvas.blocks.keySet.map(_.toLong).max, 0, scores)
 
   case class BaseScores(
-    lineCut: Int,
-    pointCut: Int,
-    color: Int,
-    swap: Int,
-    merge: Int
+      lineCut: Int,
+      pointCut: Int,
+      color: Int,
+      swap: Int,
+      merge: Int
   )
 
   object BaseScores {
@@ -25,7 +25,7 @@ object Program {
 
     final val v2 = BaseScores(
       lineCut = 2,
-      pointCut = 5,
+      pointCut = 3,
       color = 5,
       swap = 3,
       merge = 1
