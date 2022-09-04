@@ -6,9 +6,9 @@ import scala.collection.mutable
 
 object Solver {
   val BestCutBreadth = 5
-  val BeamSize = 10000
-  val MaxIterations = 2000
-  val ColorDiffTolerance = 30
+  val BeamSize = 100
+  val MaxIterations = 5000
+  val ColorDiffTolerance = 20
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
     val height = image.getHeight()
