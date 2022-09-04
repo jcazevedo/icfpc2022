@@ -331,7 +331,6 @@ object Interpreter {
             val nextBlocks = program.canvas.blocks
               .updated(blockId1, offset(block2, block1.shape.bottomLeft))
               .updated(blockId2, offset(block1, block2.shape.bottomLeft))
-            // TODO: Check if shape is correct here.
             val nextCost = program.cost + costOf(move, program.canvas.shape, block1.shape)
 
             Right(
