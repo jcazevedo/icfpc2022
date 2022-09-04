@@ -7,7 +7,7 @@ import scala.collection.mutable
 object Solver {
   val BestCutBreadth = 5
   val BeamSize = 10000
-  val MaxIterations = 1000
+  val MaxIterations = 2000
   val ColorDiffTolerance = 30
 
   def solve(image: BufferedImage, initialCanvas: Canvas): Program = {
@@ -153,9 +153,9 @@ object Solver {
 
     println(s"Start score: ${start.score}")
 
-    var iterations = 0
+    var expansions = 0
     var ts = System.currentTimeMillis()
-    while (pq.nonEmpty && iterations < MaxIterations) {
+    while (pq.nonEmpty && expansions < MaxIterations) {
       val current = pq.dequeue()
       if (current.score < best.score) {
         println(s"New best score: ${current.score}")
@@ -274,10 +274,10 @@ object Solver {
       if (pq.size > BeamSize)
         pq = pq.dropRight(pq.size - BeamSize)
 
-      iterations += 1
-      if (iterations % 100 == 0) {
+      expansions += 1
+      if (expansions % 100 == 0) {
         val diff = System.currentTimeMillis() - ts
-        println(s"Ran $iterations iterations in ${diff}ms...")
+        println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
         ts = System.currentTimeMillis()
       }
     }
