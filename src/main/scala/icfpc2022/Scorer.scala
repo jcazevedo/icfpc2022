@@ -35,7 +35,7 @@ object Scorer {
           cache((shape, color))
 
         case ComplexBlock(_, childBlocks) =>
-          childBlocks.map(blockDiff).sum
+          childBlocks.toList.map(blockDiff).sum
       }
     }
 

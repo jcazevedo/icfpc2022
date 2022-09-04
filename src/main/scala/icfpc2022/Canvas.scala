@@ -48,13 +48,13 @@ object Canvas {
           val shape = Shape(bottomLeft, topRight.x - bottomLeft.x, topRight.y - bottomLeft.y)
           id -> ComplexBlock(
             shape,
-            (0 until shape.width).flatMap { w =>
-              (0 until shape.height).map { h =>
+            (bottomLeft.x until topRight.x).flatMap { x =>
+              (bottomLeft.y until topRight.y).map { y =>
                 SimpleBlock(
-                  Shape(Coords(bottomLeft.x + w, bottomLeft.y + h), 1, 1),
-                  Color.fromInt(initialImage.get.getRGB(pngX + w, initialImage.get.getHeight() - (pngY + h) - 1))
+                  Shape(Coords(x, y), 1, 1),
+                  Color.fromInt(initialImage.get.getRGB(pngX + x, initialImage.get.getHeight() - (pngY + y) - 1))
                 )
-              }.toSet
+              }
             }.toSet
           )
         }
