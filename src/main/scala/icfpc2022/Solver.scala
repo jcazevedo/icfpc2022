@@ -8,7 +8,7 @@ import scala.collection.mutable
 import com.google.common.collect.MinMaxPriorityQueue
 
 object Solver {
-  val BestCutBreadth = 5
+  val BestCutBreadth = 10
   val BeamSize = 400000
   val MaxExpansions = 10000
   val ColorDiffTolerance = 30
@@ -37,6 +37,30 @@ object Solver {
         mostFrequentColorCache(shape) = counts.maxBy(_._2)._1
       }
       mostFrequentColorCache(shape)
+    }
+
+    val averageColorCache = mutable.Map.empty[Shape, Color]
+    def averageColor(shape: Shape): Color = {
+      if (!averageColorCache.contains(shape)) {
+        var r = 0L
+        var g = 0L
+        var b = 0L
+        var a = 0L
+
+        (shape.bottomLeft.x until shape.topRight.x).foreach(x =>
+          (shape.bottomLeft.y until shape.topRight.y).foreach(y => {
+            val color = getOriginalColor(x, y)
+            r += color.r
+            g += color.g
+            b += color.b
+            a += color.a
+          })
+        )
+
+        averageColorCache(shape) =
+          Color((r / shape.size).toInt, (g / shape.size).toInt, (b / shape.size).toInt, (a / shape.size).toInt)
+      }
+      averageColorCache(shape)
     }
 
     def isSameColor(color1: Color, color2: Color): Boolean =
@@ -145,12 +169,8 @@ object Solver {
 
         // Try painting.
         timers.time("paint expansion") {
-          val targetColor = mostFrequentColor(block.shape)
-          val shouldPaint = block match {
-            case ComplexBlock(_, blocks) => blocks.exists(b => !isSameColor(b.color, targetColor))
-            case SimpleBlock(_, color)   => !isSameColor(color, targetColor)
-          }
-          if (shouldPaint) moves.addOne(ColorMove(id, targetColor))
+          moves.addOne(ColorMove(id, mostFrequentColor(block.shape)))
+          moves.addOne(ColorMove(id, averageColor(block.shape)))
         }
 
         singleBlockMovesCache(block) = moves.toList
@@ -205,11 +225,15 @@ object Solver {
         if (current.score < best.score)
           best = current
 
-        current.program.canvas.blocks.foreach { case (id, block) =>
-          val moves = timers.time("get moves")(singleBlockMoves(id, block))
-          moves.foreach { move =>
-            val nextProgram = timers.time("apply move")(Interpreter.unsafeApply(current.program, move))
-            enqueueState(SearchNode(nextProgram))
+        timers.time("expand node") {
+          current.program.canvas.blocks.foreach { case (id, block) =>
+            val moves = timers.time("get moves")(singleBlockMoves(id, block))
+            timers.time("expand moves") {
+              moves.foreach { move =>
+                val nextProgram = timers.time("apply move")(Interpreter.unsafeApply(current.program, move))
+                enqueueState(SearchNode(nextProgram))
+              }
+            }
           }
         }
 
