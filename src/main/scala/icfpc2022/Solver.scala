@@ -100,8 +100,8 @@ object Solver {
           (1 until shape.height).map(h => h -> lineCutScore(shape, LineCutMove.Horizontal, shape.bottomLeft.y + h))
 
         val candidates = for {
-          (w, vs) <- verticalCandidates
-          (h, hs) <- horizontalCandidates
+          (w, vs) <- verticalCandidates.sortBy(_._2).reverse.take(BestCutBreadth)
+          (h, hs) <- horizontalCandidates.sortBy(_._2).reverse.take(BestCutBreadth)
           score = (vs * shape.height + hs * shape.width) / (shape.height + shape.width)
         } yield (Coords(shape.bottomLeft.x + w, shape.bottomLeft.y + h) -> score)
 
