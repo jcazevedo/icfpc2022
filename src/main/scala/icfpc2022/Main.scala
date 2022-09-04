@@ -45,9 +45,9 @@ object Main extends App {
         val initialImage =
           if (initialCanvasPNGFile.exists()) Some(ImageIO.read(initialCanvasPNGFile))
           else None
-        Program.fromInitialCanvas(Canvas.fromJson(json, initialImage))
+        Program.fromInitialCanvas(Canvas.fromJson(json, initialImage), initialImage.fold(Program.BaseScores.default)(_ => Program.BaseScores.v2))
       } else {
-        Program.fromInitialCanvas(Canvas.blank(image.getWidth(), image.getHeight()))
+        Program.fromInitialCanvas(Canvas.blank(image.getWidth(), image.getHeight()), Program.BaseScores.default)
       }
     }
     val p = Solver.solve(image, initialProgram)

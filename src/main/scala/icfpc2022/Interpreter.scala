@@ -25,14 +25,14 @@ object Interpreter {
       s"Blocks with id $id1 and $id2 are not adjoint"
   }
 
-  private def costOf(move: Move, canvasShape: Shape, blockShape: Shape): Long = {
+  private def costOf(move: Move, canvasShape: Shape, blockShape: Shape, scores: Program.BaseScores): Long = {
     val dynamicCost = canvasShape.size.toDouble / blockShape.size.toDouble
     val baseCost = move match {
-      case _: ColorMove    => 5.0
-      case _: LineCutMove  => 7.0
-      case _: PointCutMove => 10.0
-      case _: MergeMove    => 1.0
-      case _: SwapMove     => 3.0
+      case _: ColorMove    => scores.color
+      case _: LineCutMove  => scores.lineCut
+      case _: PointCutMove => scores.pointCut
+      case _: MergeMove    => scores.merge
+      case _: SwapMove     => scores.swap
     }
 
     math.round(baseCost * dynamicCost)
@@ -97,7 +97,7 @@ object Interpreter {
 
           case Some(block) =>
             val nextBlocks = program.canvas.blocks.updated(blockId, SimpleBlock(block.shape, color))
-            val nextCost = program.cost + costOf(move, program.canvas.shape, block.shape)
+            val nextCost = program.cost + costOf(move, program.canvas.shape, block.shape, program.scores)
 
             Right(
               program.copy(
@@ -123,7 +123,7 @@ object Interpreter {
                   .removed(blockId)
                   .updated(blockId + ".0", SimpleBlock(shape0, color))
                   .updated(blockId + ".1", SimpleBlock(shape1, color))
-                val nextCost = program.cost + costOf(move, program.canvas.shape, shape)
+                val nextCost = program.cost + costOf(move, program.canvas.shape, shape, program.scores)
 
                 Right(
                   program.copy(
@@ -156,7 +156,7 @@ object Interpreter {
                   .removed(blockId)
                   .updated(blockId + ".0", ComplexBlock(shape0, forBlockId0))
                   .updated(blockId + ".1", ComplexBlock(shape1, forBlockId1))
-                val nextCost = program.cost + costOf(move, program.canvas.shape, shape)
+                val nextCost = program.cost + costOf(move, program.canvas.shape, shape, program.scores)
 
                 Right(
                   program.copy(
@@ -185,7 +185,7 @@ object Interpreter {
                   .updated(blockId + ".1", SimpleBlock(shape1, color))
                   .updated(blockId + ".2", SimpleBlock(shape2, color))
                   .updated(blockId + ".3", SimpleBlock(shape3, color))
-                val nextCost = program.cost + costOf(move, program.canvas.shape, shape)
+                val nextCost = program.cost + costOf(move, program.canvas.shape, shape, program.scores)
 
                 Right(
                   program.copy(
@@ -228,7 +228,7 @@ object Interpreter {
                   .updated(blockId + ".1", ComplexBlock(shape1, forBlock1))
                   .updated(blockId + ".2", ComplexBlock(shape2, forBlock2))
                   .updated(blockId + ".3", ComplexBlock(shape3, forBlock3))
-                val nextCost = program.cost + costOf(move, program.canvas.shape, shape)
+                val nextCost = program.cost + costOf(move, program.canvas.shape, shape, program.scores)
 
                 Right(
                   program.copy(canvas = program.canvas.copy(blocks = nextBlocks), moves = nextMoves, cost = nextCost)
@@ -272,7 +272,8 @@ object Interpreter {
               val nextCost = program.cost + costOf(
                 move,
                 program.canvas.shape,
-                if (block1.shape.size > block2.shape.size) block1.shape else block2.shape
+                if (block1.shape.size > block2.shape.size) block1.shape else block2.shape,
+                program.scores
               )
 
               Right(
@@ -296,7 +297,8 @@ object Interpreter {
               val nextCost = program.cost + costOf(
                 move,
                 program.canvas.shape,
-                if (block1.shape.size > block2.shape.size) block1.shape else block2.shape
+                if (block1.shape.size > block2.shape.size) block1.shape else block2.shape,
+                program.scores
               )
 
               Right(
@@ -330,7 +332,7 @@ object Interpreter {
             val nextBlocks = program.canvas.blocks
               .updated(blockId1, offset(block2, block1.shape.bottomLeft))
               .updated(blockId2, offset(block1, block2.shape.bottomLeft))
-            val nextCost = program.cost + costOf(move, program.canvas.shape, block1.shape)
+            val nextCost = program.cost + costOf(move, program.canvas.shape, block1.shape, program.scores)
 
             Right(
               program.copy(
