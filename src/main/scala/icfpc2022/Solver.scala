@@ -268,6 +268,7 @@ object Solver {
           val diff = System.currentTimeMillis() - ts
           println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
           println(s"Best so far: ${best.score} (${best.program.canvas.blocks.size} blocks)")
+          println(s"Queue size: ${pq.size()}")
           ts = System.currentTimeMillis()
           println()
           timers.outputAll
