@@ -225,13 +225,39 @@ object Solver {
         if (current.score < best.score)
           best = current
 
+        def enqueueMove(move: Move): Unit = {
+          val nextProgram = timers.time("apply move")(Interpreter.unsafeApply(current.program, move))
+          enqueueState(SearchNode(nextProgram))
+        }
+
         timers.time("expand node") {
-          current.program.canvas.blocks.foreach { case (id, block) =>
-            val moves = timers.time("get moves")(singleBlockMoves(id, block))
+          current.program.canvas.blockList.foreach { case (id, block) =>
+            val singleMoves = timers.time("get single block moves")(singleBlockMoves(id, block))
             timers.time("expand moves") {
-              moves.foreach { move =>
-                val nextProgram = timers.time("apply move")(Interpreter.unsafeApply(current.program, move))
-                enqueueState(SearchNode(nextProgram))
+              singleMoves.foreach(enqueueMove)
+
+              timers.time("expand multi-block moves") {
+                current.program.canvas
+                  .shapeSizeMap((block.shape.width, block.shape.height))
+                  .dropWhile(_._1 != id)
+                  .drop(1)
+                  .foreach({ case (otherId, _) => enqueueMove(SwapMove(id, otherId)) })
+
+                current.program.canvas.coordHeightMap
+                  .get(
+                    (Coords(block.shape.bottomLeft.x + block.shape.width, block.shape.bottomLeft.y), block.shape.height)
+                  )
+                  .foreach { case ((otherId, _)) =>
+                    enqueueMove(MergeMove(id, otherId))
+                  }
+
+                current.program.canvas.coordWidthMap
+                  .get(
+                    (Coords(block.shape.bottomLeft.x, block.shape.bottomLeft.y + block.shape.height), block.shape.width)
+                  )
+                  .foreach { case ((otherId, _)) =>
+                    enqueueMove(MergeMove(id, otherId))
+                  }
               }
             }
           }
