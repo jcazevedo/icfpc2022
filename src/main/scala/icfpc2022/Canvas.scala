@@ -7,6 +7,9 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder, Json}
 
 case class Canvas(shape: Shape, blocks: Map[String, Block]) {
+  lazy val blockList: List[(String, Block)] =
+    blocks.toList.sortBy(_._1)
+
   lazy val blockSet: Set[Block] =
     blocks.values.toSet
 
@@ -21,6 +24,20 @@ case class Canvas(shape: Shape, blocks: Map[String, Block]) {
       case SimpleBlock(shape, _)   => Set(shape.bottomLeft)
       case ComplexBlock(_, blocks) => blocks.map(_.shape.bottomLeft).toSet
     }.toSet
+
+  lazy val shapeMap: Map[Shape, (String, Block)] =
+    blocks.map({ case (id, block) => block.shape -> (id, block) })
+
+  lazy val coordHeightMap: Map[(Coords, Int), (String, Block)] =
+    blocks.map({ case (id, block) => (block.shape.bottomLeft, block.shape.height) -> (id, block) })
+
+  lazy val coordWidthMap: Map[(Coords, Int), (String, Block)] =
+    blocks.map({ case (id, block) => (block.shape.bottomLeft, block.shape.width) -> (id, block) })
+
+  lazy val shapeSizeMap: Map[(Int, Int), List[(String, Block)]] =
+    blockList
+      .groupBy({ case (_, block) => (block.shape.width, block.shape.height) })
+      .map({ case (k, v) => k -> v.toList })
 
   def colorOf(x: Int, y: Int) =
     simpleBlockSet
