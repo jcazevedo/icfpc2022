@@ -8,10 +8,10 @@ import scala.collection.mutable
 import com.google.common.collect.MinMaxPriorityQueue
 
 object Solver {
-  val BestCutBreadth = 10
-  val BeamSize = 400000
-  val MaxExpansions = 10000
-  val ColorDiffTolerance = 30
+  val BestCutBreadth = 5
+  val BeamSize = 800000
+  val MaxExpansions = 100000
+  val ColorDiffTolerance = 1
 
   def solve(image: BufferedImage, initialProgram: Program): Program = {
     val timers = new Timers
@@ -269,6 +269,7 @@ object Solver {
           println(s"Ran $expansions expansions (the last 100 took ${diff}ms)...")
           println(s"Best so far: ${best.score} (${best.program.canvas.blocks.size} blocks)")
           println(s"Queue size: ${pq.size()}")
+          println(s"Queue head score: ${pq.peek().score}")
           ts = System.currentTimeMillis()
           println()
           timers.outputAll

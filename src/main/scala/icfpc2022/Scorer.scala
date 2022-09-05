@@ -13,6 +13,30 @@ object Scorer {
     return math.sqrt(r2 + g2 + b2 + a2)
   }
 
+  def similarityOfShapes(
+      shapes: List[(Shape, Color)],
+      image: BufferedImage,
+      cache: mutable.Map[(Shape, Color), Double] = mutable.Map.empty[(Shape, Color), Double]
+  ): Long = {
+    lazy val height = image.getHeight()
+
+    val diff = shapes.map { case (shape, color) =>
+      if (!cache.contains((shape, color))) {
+        cache((shape, color)) = (shape.bottomLeft.x until shape.topRight.x)
+          .map(x =>
+            (shape.bottomLeft.y until shape.topRight.y)
+              .map(y => pixelDiff(color, Color.fromInt(image.getRGB(x, height - y - 1))))
+              .sum
+          )
+          .sum
+      }
+      cache((shape, color))
+    }.sum
+    val alpha = 0.005
+
+    math.round(diff * alpha)
+  }
+
   def similarity(
       p: Program,
       image: BufferedImage,
